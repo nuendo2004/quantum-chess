@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export default function GameCard({
   title,
@@ -12,6 +13,7 @@ export default function GameCard({
   description: string;
   bgColor: string;
 }) {
+  const router = useRouter();
   return (
     <motion.div
       className={`${bgColor} p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow dark:bg-opacity-50`}
@@ -22,7 +24,10 @@ export default function GameCard({
       </div>
       <h4 className="text-xl font-semibold mb-2 dark:text-white">{title}</h4>
       <p className="text-gray-600 dark:text-gray-400">{description}</p>
-      <button className="mt-6 bg-purple-600 text-white px-6 py-2 rounded-full">
+      <button
+        className="mt-6 bg-purple-600 text-white px-6 py-2 rounded-full"
+        onClick={() => router.replace("/quantumChess")}
+      >
         Play Now
       </button>
     </motion.div>
