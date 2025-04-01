@@ -8,8 +8,8 @@ const ChessBoard = () => {
     pieces,
     setInitialBoardState,
     selectedPiece,
-    getValidMoves,
     currentPlayer,
+    validMoves,
     makeMove,
   } = useGameStore((state) => state);
 
@@ -22,17 +22,28 @@ const ChessBoard = () => {
     setInitialBoardState(newMap);
   }, [pieces, setInitialBoardState, selectedPiece]);
 
-  const [availableMoves, setSvailableMoves] = useState<
-    { x: number; y: number; isOccupid: boolean }[]
-  >([]);
-
   const renderMoveIndicator = useMemo(() => {
     console.log(selectedPiece, currentPlayer[0]);
     if (!selectedPiece || selectedPiece.color[0] !== currentPlayer[0]) return;
-    console.log("update");
-    const moves = getValidMoves(selectedPiece);
-    setSvailableMoves(moves);
-    return moves.map((mv) => {
+    const moveMap = [];
+    for (const mv of validMoves) {
+      const grid = `${mv.x}-${mv.y}`;
+      if (boardState.has(grid)) {
+        moveMap.push({
+          x: mv.x,
+          y: mv.y,
+          isOccupid: true,
+        });
+      } else {
+        moveMap.push({
+          x: mv.x,
+          y: mv.y,
+          isOccupid: false,
+        });
+      }
+    }
+
+    return moveMap.map((mv) => {
       return (
         <mesh
           position={[mv.x, 0.051, mv.y]}
@@ -48,7 +59,7 @@ const ChessBoard = () => {
         </mesh>
       );
     });
-  }, [selectedPiece, getValidMoves, currentPlayer]);
+  }, [selectedPiece, currentPlayer, boardState, validMoves]);
 
   const renderBoard = useMemo(() => {
     return Array(8)
@@ -61,7 +72,7 @@ const ChessBoard = () => {
               {/* Chessboard Square */}
               <mesh
                 position={[i, 0, j]}
-                onClick={() => makeMove({ x: i, y: j }, availableMoves)}
+                onClick={() => makeMove({ x: i, y: j }, validMoves)}
               >
                 <boxGeometry args={[1, 0.1, 1]} />
                 {selectedPiece?.positions[0].x === i &&
@@ -76,7 +87,7 @@ const ChessBoard = () => {
             </React.Fragment>
           ))
       );
-  }, [availableMoves, selectedPiece, makeMove]);
+  }, [selectedPiece, makeMove, validMoves]);
 
   return (
     <group position={[-3.5, 0, -3.5]}>

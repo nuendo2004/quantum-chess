@@ -9,13 +9,15 @@ import { useEffect } from "react";
 
 export default function QuantumChessGame() {
   const { nodes } = useGLTF("/model/chess_set_new.glb");
-  const select = useGameStore((state) => state.selectedPiece);
+  const { selectedPiece: select, currentPlayer } = useGameStore(
+    (state) => state
+  );
 
   useEffect(() => {
     console.log(select?.positions);
   }, [select]);
   return (
-    <div className="h-[100vh]">
+    <div className="h-[100vh] flex">
       <Canvas camera={{ position: [0, 10, 15] }}>
         <ambientLight intensity={1} />
         <pointLight position={[10, 10, 10]} intensity={3} />
@@ -29,6 +31,10 @@ export default function QuantumChessGame() {
         <PiecesGroup nodes={nodes} />
         <OrbitControls />
       </Canvas>
+      <div className="min-w-[300px]">
+        <h2>Current Turn: {currentPlayer}</h2>
+        <h2>Score: {}</h2>
+      </div>
     </div>
   );
 }
