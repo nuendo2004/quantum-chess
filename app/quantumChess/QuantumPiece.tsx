@@ -1,5 +1,5 @@
 import { Piece } from "@/store/gamesStore";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Mesh } from "three";
 import useGameStore from "@/store/gamesStore";
 
@@ -26,6 +26,7 @@ const QuantumPiece: React.FC<{ piece: Piece; model: any }> = ({
       onClick={(e) => {
         e.stopPropagation();
         handlePieceClick(piece);
+        console.log("clicked ....");
       }}
     >
       <primitive object={model.clone()} />

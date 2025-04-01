@@ -25,11 +25,36 @@ export type QuantumState = {
   quantumTokens: { white: number; black: number };
 };
 
+const getAllAvaliableMoves = (piece: Piece) => {
+  console.log(piece.type);
+  if (piece.type == "Pawn_b" || "Pawn_w") {
+    const pos = [];
+    const variation = [
+      { x: 1, y: 0 },
+      { x: -1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: -1 },
+    ];
+    for (const vr of variation) {
+      if (vr.x < 8 && vr.y < 8)
+        pos.push({
+          x: piece.positions[0].x + vr.x,
+          y: piece.positions[0].y + vr.y,
+        });
+    }
+    console.log(pos);
+    return pos;
+  }
+  return [];
+};
+
 interface GameState {
   pieces: Piece[];
+  boardState: Map<string, Piece>;
   currentPlayer: "white" | "black";
   quantumState: QuantumState;
   selectedPiece: Piece | null;
+  moves: { pieceId: string; positions: Position }[];
   setSuperposition: (pieceId: string, positions: Position[]) => void;
   entanglePieces: (piece1Id: string, piece2Id: string) => void;
   getPieceAtPosition: (x: number, y: number) => Piece[];
@@ -38,6 +63,11 @@ interface GameState {
   setQuantumMoveType: (moveType: QuantumState["activeMoveType"]) => void;
   isValidMove: (piece: Piece, target: Position) => boolean;
   handlePieceClick: (piece: Piece) => void;
+  setInitialBoardState: (board: Map<string, string>) => void;
+  makeMove: (pos: Position, newPosition: any) => void;
+  getValidMoves: (
+    piece: Piece
+  ) => { x: number; y: number; isOccupid: boolean }[];
 }
 
 // --- Initial Setup ---
@@ -83,11 +113,17 @@ const getClassicalMoves = (piece: Piece): Position[] => {
 const useGameStore = create<GameState>((set, get) => ({
   pieces: initialPieces,
   currentPlayer: "white",
+  boardState: new Map(),
+  moves: [],
   quantumState: {
     activeMoveType: null,
     quantumTokens: { white: 3, black: 3 },
   },
   selectedPiece: null,
+
+  setInitialBoardState: (newState: Map<string, Piece>) => {
+    set({ boardState: newState });
+  },
 
   setSuperposition: (pieceId, positions) => {
     const state = get();
@@ -143,7 +179,7 @@ const useGameStore = create<GameState>((set, get) => ({
         if (p.id === pieceId) {
           // Handle pawn tunneling move (moving two spaces)
           if (
-            p.type === "pawn" &&
+            p.type.startsWith("Pawn") &&
             Math.abs(newPosition.y - p.positions[0].y) === 2
           ) {
             return { ...p, positions: [newPosition], tunnelingUsed: true };
@@ -218,8 +254,51 @@ const useGameStore = create<GameState>((set, get) => ({
 
   handlePieceClick: (piece: Piece) => {
     set((state) => ({
-      quantumState: { ...state.quantumState, selectedPiece: piece },
+      ...state.quantumState,
+      selectedPiece: piece,
     }));
+  },
+
+  makeMove: (
+    pos: Position,
+    validMoves: { x: number; y: number; isOccupid: boolean }[]
+  ) => {
+    const piece = get().boardState.get(pos.x + "-" + pos.y);
+    if (piece) return;
+    const selected = get().selectedPiece;
+    if (!selected) return;
+    else {
+      if (validMoves.some((mv) => mv.x == pos.x && mv.y == pos.y)) {
+        get().movePiece(selected.id, pos);
+        const newMap = new Map(get().boardState);
+        newMap.delete(`${selected.positions[0].x}-${selected.positions[0].y}`);
+        newMap.set(`${pos.x}-${pos.y}`, get().selectedPiece);
+        set((state) => ({ ...state, boardState: newMap }));
+      }
+    }
+  },
+
+  getValidMoves: (piece: Piece) => {
+    const moves = getAllAvaliableMoves(piece);
+    const bs = get().boardState;
+    const result = [];
+    for (const mv of moves) {
+      const grid = `${mv.x}-${mv.y}`;
+      if (bs.has(grid)) {
+        result.push({
+          x: mv.x,
+          y: mv.y,
+          isOccupid: true,
+        });
+      } else if (!bs.has(grid)) {
+        result.push({
+          x: mv.x,
+          y: mv.y,
+          isOccupid: false,
+        });
+      }
+    }
+    return result;
   },
 
   //   handleSquareClick: (target: Position) => {
