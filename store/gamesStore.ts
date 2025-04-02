@@ -380,10 +380,19 @@ const useGameStore = create<GameState>((set, get) => ({
   // },
 
   handlePieceClick: (piece: Piece) => {
-    const moves = getAllAvailableMoves(piece, get().boardState);
+    console.log("currrent p " + piece.type);
     const previous = get().selectedPiece;
-    console.log(moves);
-    console.log(previous);
+    let moves: Position[];
+    if (
+      previous &&
+      previous.color === get().currentPlayer &&
+      piece.color !== get().currentPlayer
+    ) {
+      console.log("check mate+++++");
+      moves = getAllAvailableMoves(previous, get().boardState);
+    }
+    moves = getAllAvailableMoves(piece, get().boardState);
+    // making move
     if (
       moves.some(
         (mv) =>
@@ -391,8 +400,7 @@ const useGameStore = create<GameState>((set, get) => ({
       ) &&
       previous?.color !== piece.color
     ) {
-      console.log("++++++++++");
-      // get().movePiece(previous, piece.positions[0]);
+      console.log("+++++++++++++++");
       get().makeMove(piece.positions[0], get().validMoves);
     } else
       set((state) => ({
@@ -403,13 +411,11 @@ const useGameStore = create<GameState>((set, get) => ({
   },
 
   makeMove: (pos: Position, validMoves: Position[]) => {
+    console.log("making move ++++++++++++++++++++++++");
     if (get().currentPlayer !== get().selectedPiece?.color) return;
-    console.log("1");
     const piece = get().boardState.get(pos.x + "-" + pos.y);
-    console.log("2");
     if (piece && piece.color === get().currentPlayer) return;
     const selected = get().selectedPiece;
-    console.log("3");
     if (!selected) return;
     else {
       if (validMoves.some((mv) => mv.x == pos.x && mv.y == pos.y)) {

@@ -1,5 +1,4 @@
-// app/api/auth/[...nextauth]/route.js
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
@@ -17,13 +16,12 @@ if (!client_id || !client_secret) {
   throw Error("Missing google env variables.");
 }
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: client_id,
       clientSecret: client_secret,
-
       profile(profile) {
         console.log(profile);
         return {
@@ -39,16 +37,8 @@ const handler = NextAuth({
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: {
-          label: "Email",
-          type: "email",
-          placeholder: "you@example.com",
-        },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        name: { label: "Name", type: "Name" },
-        emailVerified: { label: "Password", type: "password" },
-        image: { label: "Password", type: "password" },
-        dateCreated: { label: "Password", type: "password" },
       },
       //@ts-expect-error nothing serious
       async authorize(credentials) {
@@ -59,21 +49,13 @@ const handler = NextAuth({
           await dbConnect();
           const user = await User.findOne({ email: credentials.email });
 
-          if (!user) {
-            return null;
-          }
+          if (!user || !user.password) return null;
 
-          if (!user.password) {
-            return null;
-          }
-          console.log(user.password, credentials?.password);
           const isValid = await bcrypt.compare(
             credentials.password,
             user.password
           );
-          if (!isValid) {
-            return null;
-          }
+          if (!isValid) return null;
 
           return {
             id: user._id.toString(),
@@ -90,24 +72,30 @@ const handler = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, account, user }) {
-      if (account && user) {
-        token.accessToken = account.access_token;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      //@ts-expect-error unknown
-      session.accessToken = token.accessToken;
+      if (token.id && session.user) {
+        session.user.id = token.id as string;
+      }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      return url.startsWith(baseUrl) ? url : `${baseUrl}/`;
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
   pages: {
     signIn: "/signin",
   },
-});
+  secret: process.env.NEXTAUTH_SECRET,
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

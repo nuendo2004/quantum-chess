@@ -52,6 +52,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   dateCreated   String
+
+  gameProfile   GameProfile? 
  
   @@map("users")
 }
@@ -64,4 +66,47 @@ model VerificationToken {
  
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model GameProfile {
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String @unique @map("user_id") @db.ObjectId 
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  quantumChessWins      Int     @default(0)
+  puzzlesSolved         Int     @default(0)
+  achievementsUnlocked  Int     @default(0) 
+  currentRank           String  @default("Quantum Novice")
+  xp                    Int     @default(0)
+
+  quantumChessSkillsProgress Int @default(0)
+  puzzleSolvingProgress      Int @default(0)
+  learningProgress           Int @default(0)
+
+  quantumChessTotalGames   Int     @default(0) 
+  quantumChessCurrentStreak Int    @default(0) 
+  puzzleAverageTimeSeconds Int?   
+  puzzlePerfectSolutions   Int     @default(0) 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("game_profiles")
+}
+
+model BlogPost {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId 
+  title       String   
+  slug        String   @unique
+  content     String  
+  excerpt     String?  
+  imageUrl    String?  @map("image_url") 
+  published   Boolean  @default(false) 
+  publishedAt DateTime? @map("published_at")
+
+  createdAt   DateTime @default(now()) @map("created_at") 
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  tags     String[]
+
+  @@map("blog_posts")
 }
