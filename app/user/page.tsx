@@ -89,6 +89,7 @@ export default function ProfilePage() {
       const updatedUser = await response.json();
       setUser(updatedUser);
       setEditMode(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("Failed to save profile:", err);
       setError(err.message || "Could not save profile changes.");
@@ -220,20 +221,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-const initialProfileData = {
-  currentRank: "N/A",
-  xp: 0,
-  achievementsUnlocked: 0,
-  quantumChessSkillsProgress: 0,
-  puzzleSolvingProgress: 0,
-  learningProgress: 0,
-  quantumChessWins: 0,
-  quantumChessTotalGames: 0,
-  quantumChessCurrentStreak: 0,
-  puzzlesSolved: 0,
-  puzzleAverageTimeSeconds: null,
-  puzzlePerfectSolutions: 0,
-};
-
-export { initialProfileData };

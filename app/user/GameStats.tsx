@@ -1,8 +1,8 @@
 import React from "react";
 import StatItem from "./StatItem";
-import { initialProfileData } from "./page";
 import { formatSecondsToTime } from "@/libs/utils";
 import { GameProfile } from "@prisma/client";
+import { initialProfileData } from "./initialProfileData";
 
 const GameStats = ({ gameProfile }: { gameProfile: GameProfile | null }) => {
   const profileData = gameProfile ?? initialProfileData;

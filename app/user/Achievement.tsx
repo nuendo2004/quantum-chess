@@ -6,7 +6,7 @@ import {
   TrophyIcon,
 } from "@heroicons/react/24/outline";
 import { GameProfile } from "@prisma/client";
-import { initialProfileData } from "./page";
+import { initialProfileData } from "./initialProfileData";
 
 const Achievement = ({ gameProfile }: { gameProfile: GameProfile | null }) => {
   const profileData = gameProfile ?? initialProfileData;
