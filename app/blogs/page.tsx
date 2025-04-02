@@ -37,7 +37,7 @@ export default function BlogPage() {
     try {
       return new Date(dateStr);
     } catch (e) {
-      console.error("Invalid date encountered:", dateStr);
+      console.error("Invalid date encountered:", dateStr, e);
       return null;
     }
   };

@@ -40,9 +40,8 @@ interface GameState {
   movePiece: (piece: Piece, newPosition: Position) => void;
   collapseSuperposition: (pieceId: string, triggerPosition: Position) => void;
   setQuantumMoveType: (moveType: QuantumState["activeMoveType"]) => void;
-  isValidMove: (piece: Piece, target: Position) => boolean;
   handlePieceClick: (piece: Piece) => void;
-  setInitialBoardState: (board: Map<string, string>) => void;
+  setInitialBoardState: (board: Map<string, Piece>) => void;
   makeMove: (pos: Position, newPosition: Position[]) => void;
 }
 
@@ -96,6 +95,7 @@ const useGameStore = create<GameState>((set, get) => ({
     quantumTokens: { white: 3, black: 3 },
   },
   selectedPiece: null,
+  validMoves: [],
 
   setInitialBoardState: (newState: Map<string, Piece>) => {
     set({ boardState: newState });
@@ -121,6 +121,7 @@ const useGameStore = create<GameState>((set, get) => ({
         ...state.quantumState,
         quantumTokens: {
           ...state.quantumState.quantumTokens,
+          //@ts-expect-error todo
           [piece.color]: state.quantumState.quantumTokens[piece.color] - 1,
         },
       },

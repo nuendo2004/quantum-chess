@@ -1,9 +1,9 @@
 import { Piece } from "@/store/gamesStore";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Mesh } from "three";
 import useGameStore from "@/store/gamesStore";
 
-const QuantumPiece: React.FC<{ piece: Piece; model: any }> = ({
+const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
   piece,
   model,
 }) => {
@@ -29,6 +29,7 @@ const QuantumPiece: React.FC<{ piece: Piece; model: any }> = ({
         console.log("clicked ....");
       }}
     >
+      {/* @ts-expect-error allow */}
       <primitive object={model.clone()} />
     </mesh>
   );
