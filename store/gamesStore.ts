@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { getAllAvailableMoves } from "./tranditionalRule";
 import InitialBoardState from "./initialPiecesState";
 //@ts-expect-error no type for chess
-import { Game, move, status, moves, aiMove, getFen } from 'js-chess-engine'
+import { Game } from "js-chess-engine";
 import { getBoardName, getGridName } from "./ChessBoardMapping";
 
 export type Position = { x: number; y: number };
@@ -29,13 +29,17 @@ export type QuantumState = {
 };
 
 interface GameState {
-  game: Game
+  game: Game;
   boardState: Map<string, Piece>;
   playerColor: "white" | "black";
   currentPlayer: "white" | "black";
   quantumState: QuantumState;
   selectedPiece: Piece | null;
   validMoves: Position[];
+  lastMove: {
+    from: string;
+    to: string;
+  } | null;
   moves: { pieceId: string; positions: Position }[];
   setSuperposition: (piece: Piece, positions: Position[]) => void;
   entanglePieces: (piece1: Piece, piece2: Piece) => void;
@@ -44,6 +48,7 @@ interface GameState {
   setQuantumMoveType: (moveType: QuantumState["activeMoveType"]) => void;
   handlePieceClick: (piece: Piece) => void;
   makeMove: (pos: Position, newPosition: Position[]) => void;
+  gameScore: number;
 }
 
 const distance = (a: Position, b: Position) =>
@@ -61,6 +66,8 @@ const useGameStore = create<GameState>((set, get) => ({
   selectedPiece: null,
   validMoves: [],
   game: new Game(),
+  gameScore: 0,
+  lastMove: null,
 
   // ========================================== Classic Moves ====================================================
 
@@ -68,21 +75,23 @@ const useGameStore = create<GameState>((set, get) => ({
     const targetId = `${newPosition.x}-${newPosition.y}`;
     const previousPosition = `${piece.positions[0].x}-${piece.positions[0].y}`;
     set((state) => {
-      // Get the current board state and the target piece
       const currentBoardState = get().boardState;
       const targetPiece = currentBoardState.get(targetId);
 
       const newBoardState = new Map(currentBoardState);
-      newBoardState.delete(previousPosition)
+      newBoardState.delete(previousPosition);
       if (targetPiece) {
-        newBoardState.delete(targetId)
+        newBoardState.delete(targetId);
+        if (state.currentPlayer === state.playerColor) {
+          state.gameScore += 100;
+        } else state.gameScore -= 100;
       }
       const updatedMovingPiece: Piece = { ...piece, positions: [newPosition] };
-      newBoardState.set(targetId, updatedMovingPiece) 
-      //@ts-expect-error no type for chess
-      console.log(getBoardName(previousPosition), getBoardName(targetId))
-      co
-      state.game.move(getBoardName(previousPosition), getBoardName(targetId))
+      newBoardState.set(targetId, updatedMovingPiece);
+
+      if (state.currentPlayer === state.playerColor)
+        //@ts-expect-error no type for chess
+        state.game.move(getBoardName(previousPosition), getBoardName(targetId));
       return {
         ...state,
         boardState: newBoardState,
@@ -90,77 +99,57 @@ const useGameStore = create<GameState>((set, get) => ({
       };
     });
     if (get().currentPlayer !== get().playerColor) {
-        console.log("ai making a move")
-        const move = get().game.aiMove(1)
-        console.log(move)
-        const [[start, end]] = Object.entries(move);
-        const startPiece = get().boardState.get(getGridName(start))
+      console.log("ai is making a move");
+      setTimeout(() => {
+        const move = get().game.aiMove(1);
+        const [[start, end]] = Object.entries<string>(move);
+        //@ts-expect-error no type for chess
+        const startPiece = get().boardState.get(getGridName(start));
         if (!startPiece) {
-          throw Error("AI is just dumb, and it made a mistake.")
+          throw Error("AI is just dumb, and it made a mistake.");
         }
-        const targetPos = getGridName(end)
-        console.log(startPiece)
-        console.log(end)
-        get().movePiece(startPiece, 
-          { x: Number(targetPos.split("-")[0]), y: Number(targetPos.split("-")[1])}
-        )
+        //@ts-expect-error no type for chess
+        const targetPos = getGridName(end);
+        get().movePiece(startPiece, {
+          x: Number(targetPos.split("-")[0]),
+          y: Number(targetPos.split("-")[1]),
+        });
+        set({
+          selectedPiece: null,
+          lastMove: { from: start, to: end },
+        });
+      }, Math.floor(Math.random() * (800 - 300 + 1) + 500));
     }
-
   },
 
-
-  // isValidMove: (piece, target) => {
-  //   const classicalMoves = getClassicalMoves(piece);
-  //   return classicalMoves.some((m) => m.x === target.x && m.y === target.y);
-  // },
-
   handlePieceClick: (piece: Piece) => {
-    if (get().currentPlayer !== get().playerColor) return
+    if (get().currentPlayer !== get().playerColor) return;
     const previous = get().selectedPiece;
-    const currentValidMoves = getAllAvailableMoves(piece, get().boardState)
+    const currentValidMoves = getAllAvailableMoves(piece, get().boardState);
 
     if (!previous || piece.color === get().currentPlayer) {
       set((state) => ({
         ...state.quantumState,
         selectedPiece: piece,
         validMoves: currentValidMoves,
-      }))
-      return
+      }));
+      return;
     }
-    const previousValidMoves = getAllAvailableMoves(previous, get().boardState)
-    if (previousValidMoves.some((mv) => mv.x === piece.positions[0].x && mv.y === piece.positions[0].y)) {
-      get().movePiece(previous, piece.positions[0])
-    }
-    else {
+    const previousValidMoves = getAllAvailableMoves(previous, get().boardState);
+    if (
+      previousValidMoves.some(
+        (mv) => mv.x === piece.positions[0].x && mv.y === piece.positions[0].y
+      )
+    ) {
+      get().movePiece(previous, piece.positions[0]);
+    } else {
       set((state) => ({
         ...state.quantumState,
         selectedPiece: piece,
         validMoves: currentValidMoves,
-      }))
-      return
+      }));
+      return;
     }
-
-//     let moves: Position[];
-//     else if (
-//       previous &&
-//       previous.color === get().currentPlayer &&
-//       piece.color !== get().currentPlayer
-//     ) {
-//       moves = getAllAvailableMoves(previous, get().boardState);
-//     }
-//     moves = getAllAvailableMoves(piece, get().boardState);
-//     // making move
-//     else (
-//       moves.some(
-//         (mv) =>
-//           mv.x == previous?.positions[0].x && mv.y == previous?.positions[0].y
-//       ) &&
-//       previous?.color !== piece.color
-//     ) {
-//       console.log("+++++++++++++++");
-//       get().makeMove(piece.positions[0], get().validMoves);
-//     }
-// );
   },
 
   makeMove: (pos: Position, validMoves: Position[]) => {
@@ -176,19 +165,18 @@ const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-
   // ========================================== Quantum Moves ====================================================
 
   setSuperposition: (piece: Piece, positions: Position[]) => {
     const state = get();
     if (!piece || piece.quantumMovesLeft <= 0) return;
-    const newBoardState = new Map(state.boardState)
+    const newBoardState = new Map(state.boardState);
     newBoardState.set(`${piece.positions[0].x}-${piece.positions[0].y}`, {
       ...piece,
       positions,
       isSuperposed: true,
       quantumMovesLeft: piece.quantumMovesLeft - 1,
-    })
+    });
     set({
       boardState: newBoardState,
       quantumState: {
@@ -205,10 +193,16 @@ const useGameStore = create<GameState>((set, get) => ({
   entanglePieces: (piece1: Piece, piece2: Piece) => {
     const state = get();
     if (!piece1 || !piece2 || piece1.color !== piece2.color) return;
-    const newBoardState = new Map(state.boardState)
-    newBoardState.set(`${piece1.positions[0].x}-${piece1.positions[0].y}`, piece1)
-    newBoardState.set(`${piece2.positions[0].x}-${piece2.positions[0].y}`, piece2)
-    set({boardState: newBoardState})
+    const newBoardState = new Map(state.boardState);
+    newBoardState.set(
+      `${piece1.positions[0].x}-${piece1.positions[0].y}`,
+      piece1
+    );
+    newBoardState.set(
+      `${piece2.positions[0].x}-${piece2.positions[0].y}`,
+      piece2
+    );
+    set({ boardState: newBoardState });
   },
 
   collapseSuperposition: (piece, triggerPosition) => {
@@ -222,15 +216,15 @@ const useGameStore = create<GameState>((set, get) => ({
             : closest,
         piece.positions[0]
       );
-      const newBoardState = new Map(state.boardState)
+      const newBoardState = new Map(state.boardState);
       newBoardState.set(`${piece.positions[0].x}-${piece.positions[0].y}`, {
         ...piece,
         positions: [collapsedPosition],
         isSuperposed: false,
-      })
+      });
       return {
-        boardState: newBoardState
-      }
+        boardState: newBoardState,
+      };
     });
   },
 

@@ -1,18 +1,12 @@
 "use client";
 import useGameStore from "@/store/gamesStore";
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 
 const ChessBoard = () => {
-  const {
-    boardState,
-    selectedPiece,
-    currentPlayer,
-    validMoves,
-    makeMove,
-  } = useGameStore((state) => state);
+  const { boardState, selectedPiece, currentPlayer, validMoves, makeMove } =
+    useGameStore((state) => state);
 
   const renderMoveIndicator = useMemo(() => {
-    console.log(selectedPiece, currentPlayer[0]);
     if (!selectedPiece || selectedPiece.color[0] !== currentPlayer[0]) return;
     const moveMap = [];
     for (const mv of validMoves) {
@@ -51,7 +45,6 @@ const ChessBoard = () => {
   }, [selectedPiece, currentPlayer, boardState, validMoves]);
 
   const renderBoard = useMemo(() => {
-    console.log(selectedPiece, currentPlayer[0])
     return (
       Array(8)
         // @ts-expect-error any
@@ -60,25 +53,27 @@ const ChessBoard = () => {
           Array(8)
             // @ts-expect-error any
             .fill()
-            .map((_, j) => (
-              <React.Fragment key={`${i}-${j}`}>
-                {/* Chessboard Square */}
-                <mesh
-                  position={[i, 0, j]}
-                  onClick={() => makeMove({ x: i, y: j }, validMoves)}
-                >
-                  <boxGeometry args={[1, 0.1, 1]} />
-                  {selectedPiece?.positions[0].x === i &&
-                  selectedPiece?.positions[0].y === j ? (
-                    <meshStandardMaterial color="gold" />
-                  ) : (
-                    <meshStandardMaterial
-                      color={(i + j) % 2 ? "white" : "gray"}
-                    />
-                  )}
-                </mesh>
-              </React.Fragment>
-            ))
+            .map((_, j) => {
+              const squareKey = `${i}-${j}`;
+              return (
+                <React.Fragment key={squareKey}>
+                  <mesh
+                    position={[i, 0, j]}
+                    onClick={() => makeMove({ x: i, y: j }, validMoves)}
+                  >
+                    <boxGeometry args={[1, 0.1, 1]} />
+                    {selectedPiece?.positions[0].x === i &&
+                    selectedPiece?.positions[0].y === j ? (
+                      <meshStandardMaterial color="gold" />
+                    ) : (
+                      <meshStandardMaterial
+                        color={(i + j) % 2 ? "white" : "gray"}
+                      />
+                    )}
+                  </mesh>
+                </React.Fragment>
+              );
+            })
         )
     );
   }, [selectedPiece, makeMove, validMoves]);

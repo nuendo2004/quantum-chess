@@ -44,16 +44,13 @@ const getAllAvailableMoves = (piece: Piece, boardState: Map<string, Piece>) => {
       // Check if the potential capture square is within bounds
       if (captureX >= 0 && captureX < 8 && captureY >= 0 && captureY < 8) {
         const captureKey = `${captureX}-${captureY}`;
-        console.log("------------");
         // Check if there's a piece on the target square
         if (boardState.has(captureKey)) {
           const occupyingPiece = boardState.get(captureKey);
-          console.log("============");
           // Check if the piece belongs to the opponent
           // Make sure occupyingPiece is not undefined before accessing its color
           if (occupyingPiece && occupyingPiece.color !== piece.color) {
             // Valid capture! Add to possible moves.
-            console.log("&&&&&&&&&");
             pos.push({ x: captureX, y: captureY });
           }
         }
