@@ -17,7 +17,7 @@ export default function QuantumChessGame() {
     console.log(select?.positions);
   }, [select]);
   return (
-    <div className="h-[100vh] flex">
+    <div className="h-[80vh] lg:h-[92vh] flex flex-col lg:flex-row">
       <Canvas camera={{ position: [0, 10, 15] }}>
         <ambientLight intensity={1} />
         <pointLight position={[10, 10, 10]} intensity={3} />
@@ -31,7 +31,7 @@ export default function QuantumChessGame() {
         <PiecesGroup nodes={nodes} />
         <OrbitControls />
       </Canvas>
-      <div className="min-w-[300px]">
+      <div className="min-w-[300px] min-h-[500]px p-3">
         <h2>Current Turn: {currentPlayer}</h2>
         <h2>Score: {}</h2>
       </div>

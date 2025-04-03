@@ -5,22 +5,11 @@ import React, { useEffect, useMemo } from "react";
 const ChessBoard = () => {
   const {
     boardState,
-    pieces,
-    setInitialBoardState,
     selectedPiece,
     currentPlayer,
     validMoves,
     makeMove,
   } = useGameStore((state) => state);
-
-  useEffect(() => {
-    const newMap = new Map(boardState);
-    pieces.map((ps) => {
-      newMap.set(`${ps.positions[0].x}-${ps.positions[0].y}`, ps);
-    });
-    setInitialBoardState(newMap);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pieces, setInitialBoardState, selectedPiece]);
 
   const renderMoveIndicator = useMemo(() => {
     console.log(selectedPiece, currentPlayer[0]);
@@ -62,6 +51,7 @@ const ChessBoard = () => {
   }, [selectedPiece, currentPlayer, boardState, validMoves]);
 
   const renderBoard = useMemo(() => {
+    console.log(selectedPiece, currentPlayer[0])
     return (
       Array(8)
         // @ts-expect-error any
