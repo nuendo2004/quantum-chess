@@ -1,7 +1,7 @@
 "use client";
 import { Piece } from "./gamesStore";
 
-const InitialPieces: Piece[] = [
+const initialPieces: Piece[] = [
   // White pieces
 
   {
@@ -173,4 +173,11 @@ const InitialPieces: Piece[] = [
     quantumMovesLeft: 1,
   })),
 ];
-export default InitialPieces;
+
+const InitialBoardState = new Map()
+
+for (let ps of initialPieces) {
+  InitialBoardState.set(`${ps.positions[0].x}-${ps.positions[0].y}`, ps)
+}
+
+export default InitialBoardState;
