@@ -165,7 +165,7 @@ const getAllAvailableMoves = (piece: Piece, boardState: Map<string, Piece>) => {
   }
 
   // --- QUEEN LOGIC ---
-  else if (piece.type.startsWith("Queen")) {
+  else if (piece.type.startsWith("queen")) {
     // Combine Rook and Bishop directions
     const directions = [
       { dx: 0, dy: 1 },

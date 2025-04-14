@@ -21,7 +21,7 @@ const Navbar: React.FC = () => {
         <div className="flex items-center gap-6">
           <nav className="hidden md:flex gap-6 text-purple-200">
             <a
-              href="/games"
+              href="/quantumChess"
               className="hover:text-purple-600 dark:hover:text-purple-400"
             >
               Games
@@ -39,7 +39,7 @@ const Navbar: React.FC = () => {
               Achievements
             </a>
             <a
-              href="/learn"
+              href="/blogs"
               className="hover:text-purple-600 dark:hover:text-purple-400"
             >
               Learn
