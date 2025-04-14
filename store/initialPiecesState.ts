@@ -45,7 +45,7 @@ const initialPieces: Piece[] = [
     id: "wQ",
     type: "queen_w",
     color: "white",
-    positions: [{ x: 3, y: 0 }],
+    positions: [{ x: 4, y: 0 }],
     isSuperposed: false,
     quantumMovesLeft: 1,
   },
@@ -53,7 +53,7 @@ const initialPieces: Piece[] = [
     id: "wK",
     type: "King_w",
     color: "white",
-    positions: [{ x: 4, y: 0 }],
+    positions: [{ x: 3, y: 0 }],
     isSuperposed: false,
     quantumMovesLeft: 0,
   },
@@ -130,7 +130,7 @@ const initialPieces: Piece[] = [
     id: "bQ",
     type: "queen_b",
     color: "black",
-    positions: [{ x: 3, y: 7 }],
+    positions: [{ x: 4, y: 7 }],
     isSuperposed: false,
     quantumMovesLeft: 1,
   },
@@ -138,7 +138,7 @@ const initialPieces: Piece[] = [
     id: "bK",
     type: "King_b",
     color: "black",
-    positions: [{ x: 4, y: 7 }],
+    positions: [{ x: 3, y: 7 }],
     isSuperposed: false,
     quantumMovesLeft: 0,
   },
@@ -174,10 +174,10 @@ const initialPieces: Piece[] = [
   })),
 ];
 
-const InitialBoardState = new Map()
+const InitialBoardState = new Map();
 
-for (let ps of initialPieces) {
-  InitialBoardState.set(`${ps.positions[0].x}-${ps.positions[0].y}`, ps)
+for (const ps of initialPieces) {
+  InitialBoardState.set(`${ps.positions[0].x}-${ps.positions[0].y}`, ps);
 }
 
 export default InitialBoardState;

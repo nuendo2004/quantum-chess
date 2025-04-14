@@ -49,14 +49,15 @@ interface GameState {
   handlePieceClick: (piece: Piece) => void;
   makeMove: (pos: Position, newPosition: Position[]) => void;
   gameScore: number;
+  message: null | string;
 }
 
 const distance = (a: Position, b: Position) =>
   Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 
 const useGameStore = create<GameState>((set, get) => ({
-  currentPlayer: "white",
-  playerColor: "white",
+  currentPlayer: "white" as const,
+  playerColor: "white" as const,
   boardState: InitialBoardState,
   moves: [],
   quantumState: {
@@ -68,10 +69,17 @@ const useGameStore = create<GameState>((set, get) => ({
   game: new Game(),
   gameScore: 0,
   lastMove: null,
+  message: null,
 
   // ========================================== Classic Moves ====================================================
 
   movePiece: (piece, newPosition) => {
+    if (get().game.exportJson().checkMate) {
+      console.log("check");
+      set((state) => ({ ...state, message: "Check Mate!" }));
+      return;
+    }
+    if (get().message) set((state) => ({ ...state, message: null }));
     const targetId = `${newPosition.x}-${newPosition.y}`;
     const previousPosition = `${piece.positions[0].x}-${piece.positions[0].y}`;
     set((state) => {
@@ -90,8 +98,19 @@ const useGameStore = create<GameState>((set, get) => ({
       newBoardState.set(targetId, updatedMovingPiece);
 
       if (state.currentPlayer === state.playerColor)
-        //@ts-expect-error no type for chess
-        state.game.move(getBoardName(previousPosition), getBoardName(targetId));
+        try {
+          state.game.move(
+            //@ts-expect-error no type for chess
+            getBoardName(previousPosition),
+            //@ts-expect-error no type for chess
+            getBoardName(targetId)
+          );
+        } catch {
+          return {
+            ...state,
+            message: "Thats not going to work, look at your king!",
+          };
+        }
       return {
         ...state,
         boardState: newBoardState,
