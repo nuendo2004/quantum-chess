@@ -12,10 +12,6 @@ export type Piece = {
   type: string;
   color: string;
   positions: Position[];
-  isSuperposed: boolean;
-  entangledWith?: string;
-  tunnelingUsed?: boolean;
-  quantumMovesLeft: number;
   offside?: {
     x: number;
     y: number;
@@ -28,6 +24,11 @@ export type QuantumState = {
   quantumTokens: { white: number; black: number };
 };
 
+export type Superposition = {
+  clone: Piece;
+  captured: Piece[];
+  timeLeft: number;
+};
 interface GameState {
   game: Game;
   boardState: Map<string, Piece>;
@@ -41,19 +42,21 @@ interface GameState {
     to: string;
   } | null;
   moves: { pieceId: string; positions: Position }[];
-  setSuperposition: (piece: Piece, positions: Position[]) => void;
-  entanglePieces: (piece1: Piece, piece2: Piece) => void;
+  setSuperposition: () => void;
   movePiece: (piece: Piece, newPosition: Position) => void;
-  collapseSuperposition: (piece: Piece, triggerPosition: Position) => void;
-  setQuantumMoveType: (moveType: QuantumState["activeMoveType"]) => void;
   handlePieceClick: (piece: Piece) => void;
   makeMove: (pos: Position, newPosition: Position[]) => void;
   gameScore: number;
   message: null | string;
+  superpositions: Superposition;
+  spawnPiece: (piece: Piece) => void;
+  selectedSuperposition: {
+    original: Superposition | null;
+    clone: Superposition | null;
+  } | null;
+  initializeSuperposition: (p: Piece) => void;
+  isSuperposed: (p: Piece) => boolean;
 }
-
-const distance = (a: Position, b: Position) =>
-  Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 
 const useGameStore = create<GameState>((set, get) => ({
   currentPlayer: "white" as const,
@@ -70,9 +73,16 @@ const useGameStore = create<GameState>((set, get) => ({
   gameScore: 0,
   lastMove: null,
   message: null,
+  superpositions: new Map(),
+  selectedSuperposition: null,
 
   // ========================================== Classic Moves ====================================================
-
+  isSuperposed: (piece: Piece) => {
+    return (
+      piece.id == get().selectedSuperposition?.original?.id ||
+      piece.id == get().selectedSuperposition?.clone?.id
+    );
+  },
   movePiece: (piece, newPosition) => {
     if (get().game.exportJson().checkMate) {
       console.log("check");
@@ -87,17 +97,70 @@ const useGameStore = create<GameState>((set, get) => ({
       const targetPiece = currentBoardState.get(targetId);
 
       const newBoardState = new Map(currentBoardState);
+      console.log(piece);
       newBoardState.delete(previousPosition);
       if (targetPiece) {
+        // capture
         newBoardState.delete(targetId);
+        if (state.isSuperposed(piece)) {
+          if (state.currentPlayer === state.playerColor) {
+            if (piece.id === state.selectedSuperposition?.original?.clone.id) {
+              set({
+                selectedSuperposition: {
+                  ...state.selectedSuperposition,
+                  original: {
+                    ...state.selectedSuperposition.original,
+                    captured: [
+                      ...state.selectedSuperposition.original.captured,
+                      targetPiece,
+                    ],
+                  },
+                },
+              });
+            } else {
+              set({
+                selectedSuperposition: {
+                  ...state.selectedSuperposition,
+                  clone: {
+                    ...state.selectedSuperposition.clone,
+                    captured: [
+                      ...state.selectedSuperposition.clone.captured,
+                      targetPiece,
+                    ],
+                  },
+                },
+              });
+            }
+          } else {
+          }
+        }
         if (state.currentPlayer === state.playerColor) {
           state.gameScore += 100;
         } else state.gameScore -= 100;
       }
       const updatedMovingPiece: Piece = { ...piece, positions: [newPosition] };
       newBoardState.set(targetId, updatedMovingPiece);
-
-      if (state.currentPlayer === state.playerColor)
+      if (
+        piece.id == get().selectedSuperposition?.original?.id &&
+        !get().selectedSuperposition?.clone
+      ) {
+        // get().spawnPiece(piece);
+        newBoardState.set(previousPosition, {
+          ...piece,
+          id: piece.id + "-copy",
+        });
+        return {
+          ...state,
+          boardState: newBoardState,
+          selectedSuperposition: {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+            original: { ...state.selectedSuperposition?.original! },
+            clone: piece,
+          },
+        };
+      }
+      // player move
+      if (state.currentPlayer === state.playerColor) {
         try {
           state.game.move(
             //@ts-expect-error no type for chess
@@ -111,12 +174,14 @@ const useGameStore = create<GameState>((set, get) => ({
             message: "Thats not going to work, look at your king!",
           };
         }
+      }
       return {
         ...state,
         boardState: newBoardState,
         currentPlayer: state.currentPlayer === "white" ? "black" : "white",
       };
     });
+    // ai move
     if (get().currentPlayer !== get().playerColor) {
       console.log("ai is making a move");
       setTimeout(() => {
@@ -145,7 +210,7 @@ const useGameStore = create<GameState>((set, get) => ({
     if (get().currentPlayer !== get().playerColor) return;
     const previous = get().selectedPiece;
     const currentValidMoves = getAllAvailableMoves(piece, get().boardState);
-
+    // select another piece
     if (!previous || piece.color === get().currentPlayer) {
       set((state) => ({
         ...state.quantumState,
@@ -167,10 +232,20 @@ const useGameStore = create<GameState>((set, get) => ({
         selectedPiece: piece,
         validMoves: currentValidMoves,
       }));
+      // update the select superpos if user click somethingelse
+      if (piece.id == get().selectedSuperposition?.original?.clone.id) {
+        get().initializeSuperposition(piece);
+      }
       return;
     }
   },
-
+  spawnPiece: (piece: Piece) => {
+    const newBoard = new Map(get().boardState);
+    newBoard.set(`${piece.positions[0].x}-${piece.positions[0].y}`, piece);
+    set({
+      boardState: newBoard,
+    });
+  },
   makeMove: (pos: Position, validMoves: Position[]) => {
     if (get().currentPlayer !== get().selectedPiece?.color) return;
     const piece = get().boardState.get(pos.x + "-" + pos.y);
@@ -186,71 +261,43 @@ const useGameStore = create<GameState>((set, get) => ({
 
   // ========================================== Quantum Moves ====================================================
 
-  setSuperposition: (piece: Piece, positions: Position[]) => {
-    const state = get();
-    if (!piece || piece.quantumMovesLeft <= 0) return;
-    const newBoardState = new Map(state.boardState);
-    newBoardState.set(`${piece.positions[0].x}-${piece.positions[0].y}`, {
-      ...piece,
-      positions,
-      isSuperposed: true,
-      quantumMovesLeft: piece.quantumMovesLeft - 1,
-    });
+  initializeSuperposition: (piece: Piece) => {
     set({
-      boardState: newBoardState,
-      quantumState: {
-        ...state.quantumState,
-        quantumTokens: {
-          ...state.quantumState.quantumTokens,
-          //@ts-expect-error todo
-          [piece.color]: state.quantumState.quantumTokens[piece.color] - 1,
+      // if captured or run out of time, it will collapse
+      selectedSuperposition: {
+        original: {
+          clone: piece,
+          captured: [],
+          timeLeft: 3,
         },
+        clone: null,
       },
     });
   },
-
-  entanglePieces: (piece1: Piece, piece2: Piece) => {
-    const state = get();
-    if (!piece1 || !piece2 || piece1.color !== piece2.color) return;
-    const newBoardState = new Map(state.boardState);
-    newBoardState.set(
-      `${piece1.positions[0].x}-${piece1.positions[0].y}`,
-      piece1
-    );
-    newBoardState.set(
-      `${piece2.positions[0].x}-${piece2.positions[0].y}`,
-      piece2
-    );
-    set({ boardState: newBoardState });
-  },
-
-  collapseSuperposition: (piece, triggerPosition) => {
-    set((state) => {
-      if (!piece?.isSuperposed || piece.type.startsWith("King")) return state;
-
-      const collapsedPosition = piece.positions.reduce(
-        (closest, pos) =>
-          distance(pos, triggerPosition) < distance(closest, triggerPosition)
-            ? pos
-            : closest,
-        piece.positions[0]
-      );
-      const newBoardState = new Map(state.boardState);
-      newBoardState.set(`${piece.positions[0].x}-${piece.positions[0].y}`, {
-        ...piece,
-        positions: [collapsedPosition],
-        isSuperposed: false,
-      });
-      return {
-        boardState: newBoardState,
-      };
+  addSuperposition: (piece: Piece, clone: Piece) => {
+    const newMap = new Map(get().superpositions);
+    newMap.set(`${piece.positions[0].x}-${piece.positions[0].y}`, {
+      clone: clone,
+      isCaptured: false,
+      captured: [],
+      timeLeft: 2,
     });
   },
 
-  setQuantumMoveType: (moveType) => {
-    set((state) => ({
-      quantumState: { ...state.quantumState, activeMoveType: moveType },
-    }));
+  setSuperposition: () => {
+    const state = get();
+    // if (!piece || piece.quantumMovesLeft <= 0) return;
+    const newBoardState = new Map(state.boardState);
+    newBoardState.set(
+      `${state.selectedPiece!.positions[0].x}-${
+        state.selectedPiece!.positions[0].y
+      }`,
+      {
+        ...state.selectedPiece!,
+        isSuperposed: true,
+      }
+    );
+    console.log(state.selectedPiece);
   },
 }));
 
