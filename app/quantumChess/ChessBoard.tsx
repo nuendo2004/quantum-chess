@@ -62,8 +62,8 @@ const ChessBoard = () => {
                     onClick={() => makeMove({ x: i, y: j }, validMoves)}
                   >
                     <boxGeometry args={[1, 0.1, 1]} />
-                    {selectedPiece?.positions[0].x === i &&
-                    selectedPiece?.positions[0].y === j ? (
+                    {selectedPiece?.position.x === i &&
+                    selectedPiece?.position.y === j ? (
                       <meshStandardMaterial color="gold" />
                     ) : (
                       <meshStandardMaterial

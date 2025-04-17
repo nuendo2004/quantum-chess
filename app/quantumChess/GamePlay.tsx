@@ -13,6 +13,8 @@ const GamePlay: React.FC = () => {
     gameScore: score,
     playerColor,
     lastMove,
+    initializeSuperposition,
+    selectedPiece,
   } = useGameStore((state) => state);
 
   const scoreColor =
@@ -62,6 +64,11 @@ const GamePlay: React.FC = () => {
           >
             {lastMove ? `From ${lastMove.from} to ${lastMove.to}` : "N/A"}
           </span>
+        </div>
+        <div className="flex lg:flex-col justify-between gap-2 text-xl">
+          <button onClick={() => initializeSuperposition(selectedPiece!)}>
+            Superposition move
+          </button>
         </div>
       </div>
     </div>

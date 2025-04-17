@@ -2,8 +2,8 @@ import { Piece } from "./gamesStore";
 
 const getAllAvailableMoves = (piece: Piece, boardState: Map<string, Piece>) => {
   const pos: Array<{ x: number; y: number }> = [];
-  const currentX = piece.positions[0].x;
-  const currentY = piece.positions[0].y;
+  const currentX = piece.position.x;
+  const currentY = piece.position.y;
 
   if (piece.type.startsWith("Pawn")) {
     const forwardYDelta = piece.color === "white" ? 1 : -1;
@@ -230,5 +230,21 @@ const getAllAvailableMoves = (piece: Piece, boardState: Map<string, Piece>) => {
 
   return pos;
 };
+type AiPieceCode = keyof typeof aiPieceMap;
+const aiPieceMap = {
+  wR: "R",
+  wN: "N",
+  wB: "B",
+  wQ: "Q",
+  wK: "K",
+  wP: "P",
+  bR: "r",
+  bN: "n",
+  bB: "b",
+  bQ: "q",
+  bK: "k",
+  bP: "p",
+};
 
-export { getAllAvailableMoves };
+export { getAllAvailableMoves, aiPieceMap };
+export type { AiPieceCode };
