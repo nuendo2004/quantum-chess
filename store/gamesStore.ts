@@ -1,9 +1,13 @@
 import { create } from "zustand";
-import { getAllAvailableMoves } from "./tranditionalRule";
+import {
+  AiPieceCode,
+  aiPieceMap,
+  getAllAvailableMoves,
+} from "./tranditionalRule";
 import InitialBoardState from "./initialPiecesState";
 //@ts-expect-error no type for chess
 import { Game } from "js-chess-engine";
-import { getBoardName, getGridName } from "./ChessBoardMapping";
+import { getGrid, getCoord, Coord, getCoordId } from "./ChessBoardMapping";
 
 export type Position = { x: number; y: number };
 
@@ -11,7 +15,7 @@ export type Piece = {
   id: string;
   type: string;
   color: string;
-  positions: Position[];
+  position: Position;
   offside?: {
     x: number;
     y: number;
@@ -41,21 +45,19 @@ interface GameState {
     from: string;
     to: string;
   } | null;
-  moves: { pieceId: string; positions: Position }[];
-  setSuperposition: () => void;
   movePiece: (piece: Piece, newPosition: Position) => void;
   handlePieceClick: (piece: Piece) => void;
   makeMove: (pos: Position, newPosition: Position[]) => void;
+  capturePiece: (taker: Piece, loser: Piece) => void;
+  moveToGrid: (piece: Piece, position: Position) => void;
+  handleAiMove: () => void;
   gameScore: number;
   message: null | string;
-  superpositions: Superposition;
   spawnPiece: (piece: Piece) => void;
-  selectedSuperposition: {
-    original: Superposition | null;
-    clone: Superposition | null;
-  } | null;
   initializeSuperposition: (p: Piece) => void;
-  isSuperposed: (p: Piece) => boolean;
+  superPositions: Map<string, Superposition>;
+  collapsePiece: (p: Piece) => void;
+  addVictim: (taker: Piece, loser: Piece) => void;
 }
 
 const useGameStore = create<GameState>((set, get) => ({
@@ -73,140 +75,93 @@ const useGameStore = create<GameState>((set, get) => ({
   gameScore: 0,
   lastMove: null,
   message: null,
-  superpositions: new Map(),
   selectedSuperposition: null,
+  superPositions: new Map(),
 
   // ========================================== Classic Moves ====================================================
-  isSuperposed: (piece: Piece) => {
-    return (
-      piece.id == get().selectedSuperposition?.original?.id ||
-      piece.id == get().selectedSuperposition?.clone?.id
-    );
-  },
   movePiece: (piece, newPosition) => {
-    if (get().game.exportJson().checkMate) {
+    let state = get();
+    if (state.game.exportJson().checkMate) {
       console.log("check");
       set((state) => ({ ...state, message: "Check Mate!" }));
       return;
     }
-    if (get().message) set((state) => ({ ...state, message: null }));
-    const targetId = `${newPosition.x}-${newPosition.y}`;
-    const previousPosition = `${piece.positions[0].x}-${piece.positions[0].y}`;
-    set((state) => {
-      const currentBoardState = get().boardState;
-      const targetPiece = currentBoardState.get(targetId);
+    if (state.message) set((state) => ({ ...state, message: null }));
 
-      const newBoardState = new Map(currentBoardState);
-      console.log(piece);
-      newBoardState.delete(previousPosition);
-      if (targetPiece) {
-        // capture
-        newBoardState.delete(targetId);
-        if (state.isSuperposed(piece)) {
-          if (state.currentPlayer === state.playerColor) {
-            if (piece.id === state.selectedSuperposition?.original?.clone.id) {
-              set({
-                selectedSuperposition: {
-                  ...state.selectedSuperposition,
-                  original: {
-                    ...state.selectedSuperposition.original,
-                    captured: [
-                      ...state.selectedSuperposition.original.captured,
-                      targetPiece,
-                    ],
-                  },
-                },
-              });
-            } else {
-              set({
-                selectedSuperposition: {
-                  ...state.selectedSuperposition,
-                  clone: {
-                    ...state.selectedSuperposition.clone,
-                    captured: [
-                      ...state.selectedSuperposition.clone.captured,
-                      targetPiece,
-                    ],
-                  },
-                },
-              });
-            }
-          } else {
-          }
-        }
-        if (state.currentPlayer === state.playerColor) {
-          state.gameScore += 100;
-        } else state.gameScore -= 100;
-      }
-      const updatedMovingPiece: Piece = { ...piece, positions: [newPosition] };
-      newBoardState.set(targetId, updatedMovingPiece);
-      if (
-        piece.id == get().selectedSuperposition?.original?.id &&
-        !get().selectedSuperposition?.clone
-      ) {
-        // get().spawnPiece(piece);
-        newBoardState.set(previousPosition, {
-          ...piece,
-          id: piece.id + "-copy",
-        });
-        return {
-          ...state,
-          boardState: newBoardState,
-          selectedSuperposition: {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-            original: { ...state.selectedSuperposition?.original! },
-            clone: piece,
-          },
-        };
-      }
-      // player move
-      if (state.currentPlayer === state.playerColor) {
-        try {
-          state.game.move(
-            //@ts-expect-error no type for chess
-            getBoardName(previousPosition),
-            //@ts-expect-error no type for chess
-            getBoardName(targetId)
-          );
-        } catch {
-          return {
-            ...state,
-            message: "Thats not going to work, look at your king!",
-          };
-        }
-      }
-      return {
-        ...state,
-        boardState: newBoardState,
+    const origianlPiece = {
+      ...piece,
+      id: piece.id + "-copy",
+      position: newPosition,
+    };
+    const target = state.boardState.get(getCoordId(newPosition));
+
+    console.log(
+      piece,
+      state.superPositions.has(piece.id) &&
+        !state.superPositions.has(piece.id + "-copy")
+    );
+    if (target) {
+      // it has enemy
+      state.capturePiece(piece, target);
+    }
+    // spawn new piece
+    else if (
+      piece.color === get().currentPlayer &&
+      !piece.id.includes("-copy") &&
+      state.superPositions.has(piece.id) &&
+      !state.superPositions.has(piece.id + "-copy")
+    ) {
+      state.spawnPiece(origianlPiece);
+      return;
+    } else {
+      state.moveToGrid(piece, newPosition);
+      if (piece.color === get().playerColor)
+        get().game.move(
+          getGrid(getCoordId(piece.position)),
+          getGrid(getCoordId(newPosition))
+        );
+      set({
         currentPlayer: state.currentPlayer === "white" ? "black" : "white",
-      };
-    });
-    // ai move
-    if (get().currentPlayer !== get().playerColor) {
+      });
+    }
+    console.log(get().superPositions);
+    state = get();
+    // AI move
+    if (state.currentPlayer !== state.playerColor) {
       console.log("ai is making a move");
       setTimeout(() => {
-        const move = get().game.aiMove(1);
-        const [[start, end]] = Object.entries<string>(move);
-        //@ts-expect-error no type for chess
-        const startPiece = get().boardState.get(getGridName(start));
-        if (!startPiece) {
-          throw Error("AI is just dumb, and it made a mistake.");
-        }
-        //@ts-expect-error no type for chess
-        const targetPos = getGridName(end);
-        get().movePiece(startPiece, {
-          x: Number(targetPos.split("-")[0]),
-          y: Number(targetPos.split("-")[1]),
-        });
-        set({
-          selectedPiece: null,
-          lastMove: { from: start, to: end },
-        });
+        state.handleAiMove();
       }, Math.floor(Math.random() * (800 - 300 + 1) + 500));
     }
   },
 
+  handleAiMove: () => {
+    const move = get().game.aiMove(1);
+    const [[start, end]] = Object.entries<string>(move);
+    //@ts-expect-error no type for chess
+    const startPiece = get().boardState.get(getCoord(start));
+    if (!startPiece) {
+      throw Error("AI is just dumb, and it made a mistake.");
+    }
+    //@ts-expect-error no type for chess
+    const targetPos = getCoord(end);
+    get().movePiece(startPiece, {
+      x: Number(targetPos.split("-")[0]),
+      y: Number(targetPos.split("-")[1]),
+    });
+    set({
+      selectedPiece: null,
+      lastMove: { from: start, to: end },
+      // currentPlayer: get().currentPlayer === "white" ? "black" : "white",
+    });
+  },
+
   handlePieceClick: (piece: Piece) => {
+    console.log(
+      "currentClicked ",
+      getGrid(getCoordId(piece.position)),
+      piece.position
+    );
     if (get().currentPlayer !== get().playerColor) return;
     const previous = get().selectedPiece;
     const currentValidMoves = getAllAvailableMoves(piece, get().boardState);
@@ -222,29 +177,35 @@ const useGameStore = create<GameState>((set, get) => ({
     const previousValidMoves = getAllAvailableMoves(previous, get().boardState);
     if (
       previousValidMoves.some(
-        (mv) => mv.x === piece.positions[0].x && mv.y === piece.positions[0].y
+        (mv) => mv.x === piece.position.x && mv.y === piece.position.y
       )
     ) {
-      get().movePiece(previous, piece.positions[0]);
-    } else {
-      set((state) => ({
-        ...state.quantumState,
-        selectedPiece: piece,
-        validMoves: currentValidMoves,
-      }));
-      // update the select superpos if user click somethingelse
-      if (piece.id == get().selectedSuperposition?.original?.clone.id) {
-        get().initializeSuperposition(piece);
-      }
-      return;
+      get().movePiece(previous, piece.position);
     }
+
+    // else {
+    //   set((state) => ({
+    //     ...state.quantumState,
+    //     selectedPiece: piece,
+    //     validMoves: currentValidMoves,
+    //   }));
+    //   // update the select superpos if user click somethingelse
+    //   if (piece.id == get().selectedSuperposition?.original?.clone.id) {
+    //     get().initializeSuperposition(piece);
+    //   }
+    //   return;
+    // }
   },
   spawnPiece: (piece: Piece) => {
-    const newBoard = new Map(get().boardState);
-    newBoard.set(`${piece.positions[0].x}-${piece.positions[0].y}`, piece);
-    set({
-      boardState: newBoard,
-    });
+    const pieceId: AiPieceCode = piece.id.substring(0, 2) as AiPieceCode;
+    get().game.setPiece(
+      getGrid(`${piece.position.x}-${piece.position.y}` as Coord),
+      aiPieceMap[pieceId]
+    );
+    const state = new Map(get().boardState);
+    state.set(getCoordId(piece.position), piece);
+    get().initializeSuperposition(piece);
+    set({ boardState: state });
   },
   makeMove: (pos: Position, validMoves: Position[]) => {
     if (get().currentPlayer !== get().selectedPiece?.color) return;
@@ -262,42 +223,132 @@ const useGameStore = create<GameState>((set, get) => ({
   // ========================================== Quantum Moves ====================================================
 
   initializeSuperposition: (piece: Piece) => {
+    const newSup = new Map(get().superPositions);
+    newSup.set(piece.id, {
+      clone: piece,
+      captured: [],
+      timeLeft: 3,
+    });
     set({
       // if captured or run out of time, it will collapse
-      selectedSuperposition: {
-        original: {
-          clone: piece,
-          captured: [],
-          timeLeft: 3,
-        },
-        clone: null,
-      },
+      superPositions: newSup,
     });
   },
   addSuperposition: (piece: Piece, clone: Piece) => {
-    const newMap = new Map(get().superpositions);
-    newMap.set(`${piece.positions[0].x}-${piece.positions[0].y}`, {
+    const newMap = new Map(get().superPositions);
+    newMap.set(`${piece.position.x}-${piece.position.y}`, {
       clone: clone,
-      isCaptured: false,
       captured: [],
       timeLeft: 2,
     });
+    set({
+      superPositions: newMap,
+    });
   },
 
-  setSuperposition: () => {
+  collapsePiece: (piece: Piece) => {
     const state = get();
-    // if (!piece || piece.quantumMovesLeft <= 0) return;
-    const newBoardState = new Map(state.boardState);
-    newBoardState.set(
-      `${state.selectedPiece!.positions[0].x}-${
-        state.selectedPiece!.positions[0].y
-      }`,
-      {
-        ...state.selectedPiece!,
-        isSuperposed: true,
+    const psid = piece.id.split("-copy")[0];
+    const original = state.superPositions.get(psid);
+    const clone = state.superPositions.get(psid + "-copy");
+    if (original && clone) {
+      const rand = Math.floor(Math.random() * 2);
+      let removal: Superposition;
+      if (rand == 1) {
+        removal = original;
+      } else removal = clone;
+      console.log(removal.clone);
+      const newSup = new Map(state.superPositions);
+      const newBoard = new Map(state.boardState);
+      newSup.delete(clone.clone.id);
+      newSup.delete(original.clone.id);
+      if (removal.clone.id !== piece.id) {
+        console.log(getCoordId(removal.clone.position));
+        newBoard.delete(getCoordId(removal.clone.position));
+        state.game.removePiece(getGrid(getCoordId(removal.clone.position)));
+      } else {
+        newBoard.set(getCoordId(removal.clone.position), {
+          ...removal.clone,
+          id: psid,
+        });
       }
-    );
-    console.log(state.selectedPiece);
+      set({
+        boardState: newBoard,
+        superPositions: newSup,
+        message:
+          removal.clone.id !== piece.id
+            ? `Collapse triggered, you have lost ${removal.clone.type}.`
+            : `Collapse triggered, you ${removal.clone.type} has reset its state.`,
+      });
+    }
+  },
+
+  capturePiece: (taker: Piece, loser: Piece) => {
+    if (get().superPositions.has(loser.id)) {
+      get().collapsePiece(loser);
+    } else if (get().superPositions.has(taker.id)) {
+      get().addVictim(taker, loser);
+    }
+    const currentBoardState = get().boardState;
+    const newBoardState = new Map(currentBoardState);
+    newBoardState.delete(getCoordId(taker.position));
+    newBoardState.set(getCoordId(loser.position), {
+      ...taker,
+      position: loser.position,
+    });
+    // update superposition
+    const newSup = new Map(get().superPositions);
+    const sps = get().superPositions.get(taker.id);
+    if (sps) {
+      newSup.set(taker.id, {
+        ...sps,
+        clone: { ...sps.clone, position: loser.position },
+      });
+    }
+
+    set({
+      superPositions: newSup,
+      boardState: newBoardState,
+      currentPlayer: get().currentPlayer === "white" ? "black" : "white",
+    });
+    if (taker.color === get().playerColor)
+      get().game.move(
+        getGrid(getCoordId(taker.position)),
+        getGrid(getCoordId(loser.position))
+      );
+  },
+
+  moveToGrid: (piece: Piece, position: Position) => {
+    console.log(piece.position, position);
+    const currentBoardState = get().boardState;
+    const newBoardState = new Map(currentBoardState);
+    newBoardState.delete(getCoordId(piece.position));
+    newBoardState.set(getCoordId(position), { ...piece, position });
+    const newSup = new Map(get().superPositions);
+    const sps = get().superPositions.get(piece.id);
+    console.log(sps);
+    if (sps) {
+      newSup.set(piece.id, {
+        ...sps,
+        clone: { ...sps.clone, position: position },
+      });
+    }
+    set({
+      boardState: newBoardState,
+      selectedPiece: null,
+      superPositions: newSup,
+    });
+  },
+
+  addVictim: (taker: Piece, loser: Piece) => {
+    const sup = get().superPositions.get(taker.id);
+    if (!sup) return;
+    const newSuperPositions = new Map(get().superPositions);
+    newSuperPositions.set(taker.id, {
+      ...sup,
+      captured: [...sup.captured, loser],
+      timeLeft: (sup.timeLeft -= 1),
+    });
   },
 }));
 

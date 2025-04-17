@@ -50,15 +50,13 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
   const groupRef = useRef<Group>(null);
   const diamondRef = useRef<Mesh>(null);
 
-  const { x, y } = piece.positions[0];
+  const { x, y } = piece.position;
   const worldPos = [
     x - 3.5 + (piece.offside?.x || 0),
     0.05 + (piece.offside?.y || 0),
     y - 3.5 + (piece.offside?.z || 0),
   ];
-  const { handlePieceClick, selectedSuperposition } = useGameStore(
-    (state) => state
-  );
+  const { handlePieceClick, superPositions } = useGameStore((state) => state);
 
   useFrame((state, delta) => {
     if (diamondRef.current) {
@@ -83,8 +81,7 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
     >
       {/* @ts-expect-error Allow unknown model type for primitive */}
       <primitive object={model.clone()} />
-      {(selectedSuperposition?.original?.clone.id === piece.id ||
-        selectedSuperposition?.clone?.clone.id === piece.id) && (
+      {superPositions.has(piece.id) && (
         <mesh
           ref={diamondRef}
           position={[1, 520, 0]}
@@ -96,9 +93,9 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
         >
           <octahedronGeometry args={[1, 0]} />
           <meshStandardMaterial
-            color="cyan"
-            emissive="cyan"
-            emissiveIntensity={0.7}
+            color="red"
+            emissive="red"
+            emissiveIntensity={1}
             wireframe={false}
           />
         </mesh>
