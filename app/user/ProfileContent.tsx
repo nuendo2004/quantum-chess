@@ -4,7 +4,6 @@ import UserProfileHeader from "./UserProfileHeader";
 import Achievement from "./Achievement";
 import Progress from "./Progress";
 import GameStats from "./GameStats";
-import GameFooter from "../../components/Footer";
 import { useUserProfileResult } from "./useUserProfile";
 
 type ProfileContentProps = Pick<
@@ -66,7 +65,6 @@ export default function ProfileContent({
         <Progress gameProfile={gameProfile} data-testid="progress-section" />
         <GameStats gameProfile={gameProfile} data-testid="gamestats-section" />
       </main>
-      <GameFooter data-testid="game-footer" />
     </div>
   );
 }
