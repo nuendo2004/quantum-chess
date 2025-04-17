@@ -3,11 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import dbConnect from "@/libs/dbConnect";
-import User from "@/model/User";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import { User } from "next-auth";
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+export const prisma = globalForPrisma.prisma || new PrismaClient();
 
 const client_id = process.env.GOOGLE_CLIENT_ID;
 const client_secret = process.env.GOOGLE_CLIENT_SECRET;
@@ -40,34 +39,57 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      //@ts-expect-error nothing serious
-      async authorize(credentials) {
-        if (!credentials) {
-          throw new Error("Invalid user info");
-        }
-        try {
-          await dbConnect();
-          const user = await User.findOne({ email: credentials.email });
+      async authorize(credentials?: {
+        email: string;
+        password: string;
+      }): Promise<User | null> {
+        if (!credentials) return null;
 
-          if (!user || !user.password) return null;
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+        if (!user || !user.password) return null;
 
-          const isValid = await bcrypt.compare(
-            credentials.password,
-            user.password
-          );
-          if (!isValid) return null;
+        const valid = await bcrypt.compare(credentials.password, user.password);
+        if (!valid) return null;
 
-          return {
-            id: user._id.toString(),
-            email: user.email,
-          };
-        } catch (error) {
-          console.error("Authorization error:", error);
-          return null;
-        }
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name ?? null,
+          image: user.image ?? "",
+        };
       },
     }),
   ],
+  events: {
+    async createUser({ user }) {
+      await prisma.gameProfile.create({
+        data: {
+          userId: user.id,
+          quantumChessWins: 0,
+          puzzlesSolved: 0,
+          achievementsUnlocked: 0,
+          currentRank: "Quantum Novice",
+          xp: 0,
+          quantumChessSkillsProgress: 0,
+          puzzleSolvingProgress: 0,
+          learningProgress: 0,
+          quantumChessTotalGames: 0,
+          quantumChessCurrentStreak: 0,
+          puzzleAverageTimeSeconds: null,
+          puzzlePerfectSolutions: 0,
+        },
+      });
+    },
+    async signIn({ user }) {
+      await prisma.gameProfile.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: { userId: user.id },
+      });
+    },
+  },
   session: {
     strategy: "jwt",
   },

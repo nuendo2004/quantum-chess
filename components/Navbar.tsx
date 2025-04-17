@@ -27,7 +27,7 @@ const Navbar: React.FC = () => {
               Games
             </a>
             <a
-              href="/leaderboard"
+              href="/ranking"
               className="hover:text-purple-600 dark:hover:text-purple-400"
             >
               Leaderboard
