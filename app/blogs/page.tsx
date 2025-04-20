@@ -1,4 +1,4 @@
-// ✅ File: app/blogs/page.tsx
+// app/blogs/page.tsx
 
 "use client";
 
