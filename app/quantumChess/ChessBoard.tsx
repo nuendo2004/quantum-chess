@@ -1,10 +1,17 @@
 "use client";
-import useGameStore from "@/store/gamesStore";
-import React, { useMemo } from "react";
+import { getCoord, Grid } from "@/store/ChessBoardMapping";
+import useGameStore, { Position } from "@/store/gamesStore";
+import React, { useCallback, useMemo } from "react";
 
 const ChessBoard = () => {
-  const { boardState, selectedPiece, currentPlayer, validMoves, makeMove } =
-    useGameStore((state) => state);
+  const {
+    boardState,
+    selectedPiece,
+    currentPlayer,
+    validMoves,
+    movePiece,
+    lastMove,
+  } = useGameStore((state) => state);
 
   const renderMoveIndicator = useMemo(() => {
     if (!selectedPiece || selectedPiece.color[0] !== currentPlayer[0]) return;
@@ -44,6 +51,19 @@ const ChessBoard = () => {
     });
   }, [selectedPiece, currentPlayer, boardState, validMoves]);
 
+  const getPieceColor = useCallback(
+    (position: Position) => {
+      if (getCoord(lastMove?.from as Grid) === `${position.x}-${position.y}`) {
+        return "blue";
+      } else if (
+        getCoord(lastMove?.to as Grid) === `${position.x}-${position.y}`
+      ) {
+        return "red";
+      } else return (position.x + position.y) % 2 ? "white" : "gray";
+    },
+    [lastMove]
+  );
+
   const renderBoard = useMemo(() => {
     return (
       Array(8)
@@ -59,7 +79,7 @@ const ChessBoard = () => {
                 <React.Fragment key={squareKey}>
                   <mesh
                     position={[i, 0, j]}
-                    onClick={() => makeMove({ x: i, y: j }, validMoves)}
+                    onClick={() => movePiece(selectedPiece, { x: i, y: j })}
                   >
                     <boxGeometry args={[1, 0.1, 1]} />
                     {selectedPiece?.position.x === i &&
@@ -67,7 +87,7 @@ const ChessBoard = () => {
                       <meshStandardMaterial color="gold" />
                     ) : (
                       <meshStandardMaterial
-                        color={(i + j) % 2 ? "white" : "gray"}
+                        color={getPieceColor({ x: i, y: j })}
                       />
                     )}
                   </mesh>
@@ -76,7 +96,7 @@ const ChessBoard = () => {
             })
         )
     );
-  }, [selectedPiece, makeMove, validMoves]);
+  }, [selectedPiece, selectedPiece, validMoves, lastMove]);
 
   return (
     <group position={[-3.5, 0, -3.5]}>

@@ -1,5 +1,5 @@
 import { Piece } from "@/store/gamesStore";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Mesh, Group } from "three";
 import useGameStore from "@/store/gamesStore";
 import { useFrame } from "@react-three/fiber";
@@ -10,6 +10,7 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
 }) => {
   const groupRef = useRef<Group>(null);
   const diamondRef = useRef<Mesh>(null);
+  const ringRef = useRef<Mesh>(null);
 
   const { x, y } = piece.position;
   const worldPos = [
@@ -17,17 +18,28 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
     0.05 + (piece.offside?.y || 0),
     y - 3.5 + (piece.offside?.z || 0),
   ];
-  const { handlePieceClick, superPositions } = useGameStore((state) => state);
+  const { handlePieceClick, superPositions, entanglements } = useGameStore(
+    (state) => state
+  );
 
   useFrame((state, delta) => {
     if (diamondRef.current) {
-      diamondRef.current.rotation.y += delta * 2;
+      if (diamondRef.current) diamondRef.current.rotation.y += delta * 2;
+      if (ringRef.current) ringRef.current.rotation.z += delta * 1.5;
     }
   });
 
   const diamondWorldScale = 0.1;
   const groupScale = 0.0035;
   const diamondRelativeScale = diamondWorldScale / groupScale;
+  const ringRelativeScale = 0.14 / groupScale;
+
+  const inEntanglement = useMemo(() => {
+    for (const rec of entanglements.values()) {
+      if (rec.allyId === piece.id || rec.enemyId === piece.id) return true;
+    }
+    return false;
+  }, [entanglements, piece.id]);
 
   return (
     <group
@@ -58,6 +70,21 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
             emissive="red"
             emissiveIntensity={1}
             wireframe={false}
+          />
+        </mesh>
+      )}
+      {inEntanglement && (
+        <mesh
+          ref={ringRef}
+          rotation={[Math.PI / 2, 0, 0]}
+          position={[0, 500, 0]}
+          scale={[ringRelativeScale, ringRelativeScale, ringRelativeScale]}
+        >
+          <torusGeometry args={[1, 0.25, 8, 24]} />
+          <meshStandardMaterial
+            color="blue"
+            emissive="blue"
+            emissiveIntensity={0.8}
           />
         </mesh>
       )}

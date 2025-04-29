@@ -246,5 +246,5 @@ const aiPieceMap = {
   bP: "p",
 };
 
-export { getAllAvailableMoves, aiPieceMap };
+export { getAllAvailableMoves, aiPieceMap, getValidMoves };
 export type { AiPieceCode };
