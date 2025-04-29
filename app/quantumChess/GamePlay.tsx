@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   HiOutlineUserCircle,
   HiOutlineChip,
@@ -28,8 +28,9 @@ const GamePlay: React.FC = () => {
       ? "text-red-600 dark:text-red-400"
       : "text-gray-700 dark:text-gray-200";
 
-  const PlayerIcon =
-    currentPlayer === playerColor ? HiOutlineUserCircle : HiOutlineChip;
+  const PlayerIcon = useMemo(() => {
+    return currentPlayer === playerColor ? HiOutlineUserCircle : HiOutlineChip;
+  }, [currentPlayer, playerColor]);
 
   const energyPercent =
     (Math.min(playerQuantumEnergy, MAX_QUANTUM_ENERGY) / MAX_QUANTUM_ENERGY) *
@@ -60,7 +61,7 @@ const GamePlay: React.FC = () => {
             <span>Current Turn:</span>
           </div>
           <div className="font-medium text-gray-800 dark:text-gray-100 self-center">
-            {currentPlayer === "white" ? "Player" : "AI"} ({playerColor})
+            {currentPlayer === "white" ? "Player" : "AI"} ({currentPlayer})
           </div>
         </div>
 

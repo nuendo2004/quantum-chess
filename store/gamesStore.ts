@@ -15,6 +15,8 @@ import {
   AiPieceCode,
   aiPieceMap,
   getAllAvailableMoves,
+  playCaptureSound,
+  playMoveSound,
 } from "./tranditionalRule";
 
 export type Position = { x: number; y: number };
@@ -146,7 +148,7 @@ const useGameStore = create<GameState>((set, get) => ({
     // Ignore clicks during opponent's turn
     if (get().currentPlayer !== get().playerColor) return;
     // Update valid moves
-    const currentValidMoves = getAllAvailableMoves(piece, get().boardState);
+    const currentValidMoves = getAllAvailableMoves(piece, get().game);
     const prev = get().selectedPiece;
     if (!prev || piece.color === get().currentPlayer) {
       set({ selectedPiece: piece, validMoves: currentValidMoves });
@@ -162,18 +164,20 @@ const useGameStore = create<GameState>((set, get) => ({
   /*                             Game Mechanics                              */
   /* ----------------------------------------------------------------------- */
   movePiece: (piece, dest) => {
+    playMoveSound();
     console.log("Moving piece: ", get().game.board.configuration.turn);
     if (!piece) return;
-    const board = new Map(get().boardState);
     const state = get();
 
     const target = state.boardState.get(getCoordId(dest));
 
-    const validMoves = getAllAvailableMoves(piece, board);
-
     if (state.currentPlayer === state.playerColor) {
+      const validMoves = getAllAvailableMoves(piece, get().game);
       if (state.currentPlayer !== piece.color) return;
-      if (!validMoves.some((mv) => mv.x === dest.x && mv.y === dest.y)) return;
+      if (
+        !validMoves.some((mv: Position) => mv.x === dest.x && mv.y === dest.y)
+      )
+        return;
     }
 
     // Handle capture
@@ -194,7 +198,7 @@ const useGameStore = create<GameState>((set, get) => ({
         position: dest,
       };
       state.spawnPiece(clone);
-      const validMoves = getAllAvailableMoves(piece, get().boardState);
+      const validMoves = getAllAvailableMoves(piece, get().game);
       if (validMoves.length > 0) {
         return;
       }
@@ -245,8 +249,12 @@ const useGameStore = create<GameState>((set, get) => ({
   /* -------------------------- Simple board move -------------------------- */
   moveToGrid: (piece, dest) => {
     const board = new Map(get().boardState);
-    const validMoves = getAllAvailableMoves(piece, board);
-    if (!validMoves.some((mv) => mv.x === dest.x && mv.y === dest.y)) return;
+    const validMoves = getAllAvailableMoves(piece, get().game);
+    if (
+      !validMoves.some((mv: Position) => mv.x === dest.x && mv.y === dest.y) &&
+      get().currentPlayer === get().playerColor
+    )
+      return;
     // Remove from old square & add to new
     board.delete(getCoordId(piece.position));
     board.set(getCoordId(dest), { ...piece, position: dest });
@@ -382,6 +390,8 @@ const useGameStore = create<GameState>((set, get) => ({
         superPositions: sup,
         selectedPiece: null,
         currentPlayer: get().currentPlayer === "white" ? "black" : "white",
+        gameScore:
+          get().gameScore + get().currentPlayer === get().playerColor ? 100 : 0,
         message: captureMsg,
       });
       get().tickSuperPositions();
@@ -392,7 +402,6 @@ const useGameStore = create<GameState>((set, get) => ({
       }
       return;
     }
-
     const resolveEntanglement = (capturedId: string) => {
       for (const [key, rec] of ent) {
         if (rec.allyId === capturedId || rec.enemyId === capturedId) {
@@ -441,7 +450,7 @@ const useGameStore = create<GameState>((set, get) => ({
         : (rec.originalPos = moved.position);
       sup.set(baseId(taker.id), rec);
     }
-
+    playCaptureSound();
     if (taker.color === get().playerColor) {
       game.move(
         getGrid(getCoordId(taker.position)),
