@@ -56,6 +56,7 @@ export default function ProfileContent({
           onSave={handleSaveProfile}
           onEditToggle={handleEditToggle}
           onCancelEdit={handleCancelEdit}
+          gameProfile={gameProfile}
         />
 
         <Achievement

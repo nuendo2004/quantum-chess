@@ -5,6 +5,7 @@ import {
   HiOutlineScale,
   HiOutlineArrowLeft,
 } from "react-icons/hi";
+import { FcShop } from "react-icons/fc";
 import useGameStore from "@/store/gamesStore";
 import { FaAtom, FaRing, FaFlag } from "react-icons/fa";
 
@@ -51,9 +52,12 @@ const GamePlay: React.FC<GamePlayProp> = ({ setShowTip, setShowKnowledge }) => {
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100 border-b pb-2 dark:border-gray-600">
-        Game Status
-      </h2>
+      <div className="flex justify-between items-center border-b pb-2 dark:border-gray-600 mb-3">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+          Game
+        </h2>
+        <FcShop size={40} className="cursor-pointer" />
+      </div>
 
       <div className="flex items-center justify-between gap-2 text-2xl">
         <div className="flex items-center gap-2">
@@ -106,10 +110,10 @@ const GamePlay: React.FC<GamePlayProp> = ({ setShowTip, setShowKnowledge }) => {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 mt-4">
-        <div className="flex space-x-4">
+      <div className="">
+        <div className="flex flex-col space-x-4">
           {/* Superposition */}
-          <div className="relative group inline-block">
+          <div className="relative group">
             <button
               disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
               onClick={() => initializeSuperposition(selectedPiece!)}

@@ -22,7 +22,6 @@ const SignIn = () => {
       password,
     });
     if (result?.error) {
-      console.log(result);
       setMessage(result.error);
     } else {
       router.push("/home");

@@ -15,6 +15,27 @@ if (!client_id || !client_secret) {
   throw Error("Missing google env variables.");
 }
 
+async function rewardDailyLogin(userId: string) {
+  const profile = await prisma.gameProfile.upsert({
+    where: { userId },
+    create: { userId },
+    update: {},
+  });
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  if (!profile.lastLoggedIn || profile.lastLoggedIn < today) {
+    await prisma.gameProfile.update({
+      where: { userId },
+      data: {
+        inGameToken: { increment: 100 },
+        lastLoggedIn: new Date(),
+      },
+    });
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -22,7 +43,6 @@ export const authOptions: NextAuthOptions = {
       clientId: client_id,
       clientSecret: client_secret,
       profile(profile) {
-        console.log(profile);
         return {
           id: profile.sub,
           name: profile.name,
@@ -79,6 +99,7 @@ export const authOptions: NextAuthOptions = {
           quantumChessCurrentStreak: 0,
           puzzleAverageTimeSeconds: null,
           puzzlePerfectSolutions: 0,
+          inGameToken: 0,
         },
       });
     },
@@ -101,8 +122,16 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (token.id && session.user) {
+      if (session.user && token.id) {
+        await rewardDailyLogin(token.id as string);
+
         session.user.id = token.id as string;
+        const gp = await prisma.gameProfile.findUnique({
+          where: { userId: token.id as string },
+          select: { inGameToken: true, lastLoggedIn: true },
+        });
+        session.user.inGameToken = gp?.inGameToken ?? 0;
+        session.user.lastLoggedIn = gp?.lastLoggedIn?.toISOString() || null;
       }
       return session;
     },
