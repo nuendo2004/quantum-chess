@@ -1,4 +1,3 @@
-
 // ✅ File: components/tempData.ts
 
 import { BlogPost } from "./type";
@@ -8,7 +7,9 @@ const mockBlogPosts: BlogPost[] = [
     id: "bp1",
     title: "Understanding Quantum Entanglement",
     slug: "understanding-quantum-entanglement",
-    content: `Quantum entanglement is a physical phenomenon that occurs when pairs or groups of particles are generated or interact in ways such that the quantum state of each particle cannot be described independently.\n\nThis is one of the most counterintuitive features of quantum mechanics, challenging classical ideas of locality and realism.`,
+    content: `Quantum entanglement is a physical phenomenon that occurs when pairs or groups of particles are generated or interact in ways such that the quantum state of each particle cannot be described independently.
+
+This is one of the most counterintuitive features of quantum mechanics, challenging classical ideas of locality and realism.`,
     excerpt: "Dive deep into one of the most perplexing phenomena in quantum mechanics: entanglement.",
     imageUrl: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1170&q=80",
     published: true,
@@ -21,7 +22,9 @@ const mockBlogPosts: BlogPost[] = [
     id: "bp2",
     title: "Introduction to Quantum Computing Algorithms",
     slug: "intro-to-quantum-computing-algorithms",
-    content: `Quantum computing algorithms leverage superposition and entanglement to solve problems more efficiently than classical algorithms.\n\nNotable algorithms include Shor’s algorithm for factoring and Grover’s algorithm for searching unsorted databases.`,
+    content: `Quantum computing algorithms leverage superposition and entanglement to solve problems more efficiently than classical algorithms.
+
+Notable algorithms include Shor’s algorithm for factoring and Grover’s algorithm for searching unsorted databases.`,
     excerpt: "Explore the fundamental algorithms that power quantum computers, like Shor's and Grover's.",
     imageUrl: "https://images.unsplash.com/photo-1518773553398-650c184e0bb3?auto=format&fit=crop&w=1170&q=80",
     published: true,
@@ -34,7 +37,9 @@ const mockBlogPosts: BlogPost[] = [
     id: "bp3",
     title: "The Future of Quantum Sensing",
     slug: "future-of-quantum-sensing",
-    content: `Quantum sensing technologies use quantum states and entanglement to achieve precision beyond classical sensors.\n\nThese applications range from biomedical imaging to gravitational wave detection and navigation systems.`,
+    content: `Quantum sensing technologies use quantum states and entanglement to achieve precision beyond classical sensors.
+
+These applications range from biomedical imaging to gravitational wave detection and navigation systems.`,
     excerpt: "How quantum mechanics is revolutionizing sensor technology for unprecedented precision.",
     imageUrl: "https://images.unsplash.com/photo-1617854818583-09e7f077a156?auto=format&fit=crop&w=1170&q=80",
     published: true,
@@ -47,9 +52,11 @@ const mockBlogPosts: BlogPost[] = [
     id: "bp4",
     title: "Quantum Cryptography: Securing the Future",
     slug: "quantum-cryptography-securing-the-future",
-    content: `Quantum cryptography ensures security by using the principles of quantum mechanics.\n\nQuantum key distribution (QKD) allows two parties to produce a shared random secret key, which is secure against any computational attack.`,
+    content: `Quantum cryptography ensures security by using the principles of quantum mechanics.
+
+Quantum key distribution (QKD) allows two parties to produce a shared random secret key, which is secure against any computational attack.`,
     excerpt: "Explore how quantum mechanics is revolutionizing digital security with concepts like quantum key distribution (QKD).",
-    imageUrl: "https://images.unsplash.com/photo-1600267185121-4a295f68f7d3?auto=format&fit=crop&w=1170&q=80",
+    imageUrl: "https://lh3.googleusercontent.com/proxy/KhoKVaWpKtA891z8MbbfNb__xMgq5xIa5maEsOCWq5uquCsYGXOt1w4m4WoAQPgQHiKRI9ySqFiYfPWjv-zOGq9tarvK4qBSYsZjr5FST-HZa5labSGwwrxl2-awzlV9A_KG66DuugBb2uABjp9Rti-m-A7CDWm9L-YMqLN_aDgwVDmw",
     published: true,
     publishedAt: "2025-04-10T11:00:00Z",
     createdAt: "2025-04-08T10:00:00Z",
@@ -60,9 +67,11 @@ const mockBlogPosts: BlogPost[] = [
     id: "bp5",
     title: "Decoding Quantum Supremacy",
     slug: "decoding-quantum-supremacy",
-    content: `Quantum supremacy refers to the point where a quantum computer performs a calculation that is infeasible for any classical computer.\n\nGoogle's Sycamore processor demonstrated this in 2019, marking a historic milestone in the field.`,
+    content: `Quantum supremacy refers to the point where a quantum computer performs a calculation that is infeasible for any classical computer.
+
+Google's Sycamore processor demonstrated this in 2019, marking a historic milestone in the field.`,
     excerpt: "Understand what quantum supremacy means, why it matters, and the companies racing to reach it.",
-    imageUrl: "https://images.unsplash.com/photo-1581092335109-2beaaef0e3cf?auto=format&fit=crop&w=1170&q=80",
+    imageUrl: "https://platform.theverge.com/wp-content/uploads/sites/2/chorus/uploads/chorus_asset/file/19223821/quantum_ai_hero.jpg?quality=90&strip=all&crop=0%2C17.15091191531%2C100%2C82.84908808469&w=1200",
     published: true,
     publishedAt: "2025-04-01T13:00:00Z",
     createdAt: "2025-03-30T14:00:00Z",
@@ -85,5 +94,3 @@ const mockBlogPosts: BlogPost[] = [
 ];
 
 export default mockBlogPosts;
-
-

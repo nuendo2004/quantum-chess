@@ -1,4 +1,6 @@
-interface BlogPost {
+// ✅ File: components/type.ts
+
+export interface BlogPost {
   id: string;
   title: string;
   slug: string;
@@ -11,5 +13,3 @@ interface BlogPost {
   updatedAt: Date | string;
   tags: string[];
 }
-
-export type { BlogPost };
