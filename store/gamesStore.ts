@@ -49,6 +49,7 @@ type SuperPositions = Map<string, SuperPositionRecord>;
 type Entanglements = Map<string, EntanglementRecord>;
 
 interface GameState {
+  gameOver: number;
   boardState: Map<string, Piece>;
   currentPlayer: "white" | "black";
   playerColor: "white" | "black";
@@ -62,6 +63,8 @@ interface GameState {
   entanglements: Entanglements;
   onSelectEntangle: boolean;
   playerQuantumEnergy: number;
+  playerXP: number;
+  winner: null | string;
 
   handlePieceClick: (piece: Piece) => void;
   movePiece: (piece: Piece | null, dest: Position) => void;
@@ -73,6 +76,9 @@ interface GameState {
   collapsePiece: (piece: Piece) => void;
   tickSuperPositions: () => void;
   initializeEntanglement: (ally: Piece) => void;
+  setGameOver: (n: number) => void;
+  setWinner: (winner: string) => void;
+  restartGame: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,11 +99,10 @@ const entKey = (id1: string, id2: string) => [id1, id2].sort().join("|");
 // ---------------------------------------------------------------------------
 // Main Zustand store
 // ---------------------------------------------------------------------------
-const useGameStore = create<GameState>((set, get) => ({
-  /* ------------------------------ core state ------------------------------ */
+
+const initialState = {
+  gameOver: -1, // -1: starting, 0: playing, 1: ending
   boardState: InitialBoardState,
-  currentPlayer: "white",
-  playerColor: "white",
   selectedPiece: null,
   validMoves: [],
   game: new Game(),
@@ -108,6 +113,27 @@ const useGameStore = create<GameState>((set, get) => ({
   entanglements: new Map(),
   onSelectEntangle: false,
   playerQuantumEnergy: 100,
+  playerXP: 0,
+  winner: null,
+};
+const useGameStore = create<GameState>((set, get) => ({
+  ...initialState,
+  currentPlayer: "white",
+  playerColor: "white",
+  setGameOver: (state: number) => {
+    set({ gameOver: state });
+  },
+
+  setWinner: (winner: string) => {
+    set({
+      winner,
+      gameOver: 1,
+    });
+  },
+
+  restartGame: () => {
+    set({ ...initialState, currentPlayer: "white", playerColor: "white" });
+  },
 
   /* ------------------------------ UI actions ------------------------------ */
   handlePieceClick: (piece) => {
@@ -211,6 +237,7 @@ const useGameStore = create<GameState>((set, get) => ({
           getGrid(getCoordId(piece.position)),
           getGrid(getCoordId(dest))
         );
+        set({ playerXP: get().playerXP + 10 });
       }
     }
 
@@ -392,6 +419,8 @@ const useGameStore = create<GameState>((set, get) => ({
         currentPlayer: get().currentPlayer === "white" ? "black" : "white",
         gameScore:
           get().gameScore + get().currentPlayer === get().playerColor ? 100 : 0,
+        playerXP:
+          get().playerXP + get().currentPlayer === get().playerColor ? 100 : 0,
         message: captureMsg,
       });
       get().tickSuperPositions();
@@ -580,7 +609,6 @@ const useGameStore = create<GameState>((set, get) => ({
     else set({ entanglements: ent });
   },
 
-  /* ------------------  Initialise entanglement -------------------------- */
   initializeEntanglement: () => {
     set({
       onSelectEntangle: true,

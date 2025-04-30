@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { ReactNode, useMemo } from "react";
 import {
   HiOutlineUserCircle,
   HiOutlineChip,
@@ -6,10 +6,22 @@ import {
   HiOutlineArrowLeft,
 } from "react-icons/hi";
 import useGameStore from "@/store/gamesStore";
+import { FaAtom, FaRing, FaFlag } from "react-icons/fa";
 
 const MAX_QUANTUM_ENERGY = 100;
 
-const GamePlay: React.FC = () => {
+type GamePlayProp = {
+  setShowTip: React.Dispatch<
+    React.SetStateAction<{
+      state: boolean;
+      message: string | null;
+      link: ReactNode;
+    }>
+  >;
+  setShowKnowledge: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+const GamePlay: React.FC<GamePlayProp> = ({ setShowTip, setShowKnowledge }) => {
   const {
     currentPlayer,
     gameScore: score,
@@ -19,6 +31,7 @@ const GamePlay: React.FC = () => {
     initializeEntanglement,
     playerQuantumEnergy,
     selectedPiece,
+    setWinner,
   } = useGameStore((state) => state);
 
   const scoreColor =
@@ -42,76 +55,117 @@ const GamePlay: React.FC = () => {
         Game Status
       </h2>
 
-      <div className="space-y-4 text-gray-600 dark:text-gray-300">
-        {/* Score Display */}
-        <div className="flex items-center justify-between gap-2 text-2xl">
-          <div className="flex items-center gap-2">
-            <HiOutlineScale className="h-7 w-7 flex-shrink-0" />
-            <span>Score:</span>
-          </div>
-          <span className={`font-bold text-2xl ${scoreColor}`}>
-            {score >= 0 ? `+${score}` : score}
+      <div className="flex items-center justify-between gap-2 text-2xl">
+        <div className="flex items-center gap-2">
+          <HiOutlineScale className="h-7 w-7 flex-shrink-0" />
+          <span>Score:</span>
+        </div>
+        <span className={`font-bold text-2xl ${scoreColor}`}>
+          {score >= 0 ? `+${score}` : score}
+        </span>
+      </div>
+
+      <div className="flex lg:flex-col justify-between gap-2 text-2xl">
+        <div className="flex items-center gap-2">
+          <PlayerIcon className="h-7 w-7 flex-shrink-0" />
+          <span>Current Turn:</span>
+        </div>
+        <div className="font-medium text-gray-800 dark:text-gray-100 self-center">
+          {currentPlayer === "white" ? "Player" : "AI"} ({currentPlayer})
+        </div>
+      </div>
+
+      <div className="flex lg:flex-col justify-between gap-2 text-xl">
+        <div className="flex items-center gap-2">
+          <HiOutlineArrowLeft className="h-5 w-5 flex-shrink-0" />
+          <span>Opponent&apos;s Last Move:</span>
+        </div>
+        <span
+          className="font-mono text-xl text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded truncate max-w-[150px] sm:max-w-[250px]"
+          title={lastMove ? `From ${lastMove.from} to ${lastMove.to}` : "N/A"}
+        >
+          {lastMove ? `From ${lastMove.from} to ${lastMove.to}` : "N/A"}
+        </span>
+      </div>
+
+      {/* Energy Bar */}
+      <div className="mt-4">
+        <div className="flex justify-between mb-1">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Energy
+          </span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {playerQuantumEnergy}/{MAX_QUANTUM_ENERGY}
           </span>
         </div>
-
-        {/* Current Turn */}
-        <div className="flex lg:flex-col justify-between gap-2 text-2xl">
-          <div className="flex items-center gap-2">
-            <PlayerIcon className="h-7 w-7 flex-shrink-0" />
-            <span>Current Turn:</span>
-          </div>
-          <div className="font-medium text-gray-800 dark:text-gray-100 self-center">
-            {currentPlayer === "white" ? "Player" : "AI"} ({currentPlayer})
-          </div>
+        <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded">
+          <div
+            className="h-3 bg-green-500 rounded"
+            style={{ width: `${energyPercent}%` }}
+          />
         </div>
+      </div>
 
-        {/* Last Move */}
-        <div className="flex lg:flex-col justify-between gap-2 text-xl">
-          <div className="flex items-center gap-2">
-            <HiOutlineArrowLeft className="h-5 w-5 flex-shrink-0" />
-            <span>Opponent&apos;s Last Move:</span>
-          </div>
-          <span
-            className="font-mono text-xl text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded truncate max-w-[150px] sm:max-w-[250px]"
-            title={lastMove ? `From ${lastMove.from} to ${lastMove.to}` : "N/A"}
-          >
-            {lastMove ? `From ${lastMove.from} to ${lastMove.to}` : "N/A"}
-          </span>
-        </div>
-
-        {/* Energy Bar */}
-        <div className="mt-4">
-          <div className="flex justify-between mb-1">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Energy
-            </span>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {playerQuantumEnergy}/{MAX_QUANTUM_ENERGY}
+      <div className="flex flex-wrap gap-4 mt-4">
+        <div className="flex space-x-4">
+          {/* Superposition */}
+          <div className="relative group inline-block">
+            <button
+              disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
+              onClick={() => initializeSuperposition(selectedPiece!)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition"
+            >
+              <FaAtom className="mr-2" />
+              Superposition Move
+            </button>
+            <span
+              onClick={() => {
+                setShowKnowledge(true);
+                setShowTip({
+                  state: true,
+                  message: "Tip: You can read more about superposition ",
+                  link: "Superposition",
+                });
+              }}
+              className="absolute bottom-full left-1/2 mb-2 w-max max-w-xs -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-auto cursor-pointer"
+            >
+              What’s superposition? Click to learn more!
             </span>
           </div>
-          <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded">
-            <div
-              className="h-3 bg-green-500 rounded"
-              style={{ width: `${energyPercent}%` }}
-            />
-          </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 mt-4">
+          <div className="relative group inline-block">
+            <button
+              disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
+              onClick={() => initializeEntanglement(selectedPiece!)}
+              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition"
+            >
+              <FaRing className="mr-2" />
+              Entanglement Move
+            </button>
+            <span
+              onClick={() => {
+                setShowKnowledge(true);
+                setShowTip({
+                  state: true,
+                  message: "Tip: You can read more about entanglements ",
+                  link: "Entanglement",
+                });
+              }}
+              className="absolute bottom-full left-1/2 mb-2 w-max max-w-xs -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-auto cursor-pointer"
+            >
+              How does entanglement work? Tap here!
+            </span>
+          </div>
+
           <button
             disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
-            onClick={() => initializeSuperposition(selectedPiece!)}
-            className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition"
+            onClick={() => {
+              setWinner(playerColor === "white" ? "black" : "white");
+            }}
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition"
           >
-            Superposition Move
-          </button>
-          <button
-            disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
-            onClick={() => initializeEntanglement(selectedPiece!)}
-            className="px-4 py-2 bg-purple-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition"
-          >
-            Entanglement Move
+            <FaFlag className="mr-2" />
+            Resign
           </button>
         </div>
       </div>

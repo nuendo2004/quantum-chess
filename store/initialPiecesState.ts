@@ -62,31 +62,37 @@ const initialPieces: Piece[] = [
       z: 0,
     },
   },
+  //@ts-expect-error color is const
   ...Array.from({ length: 8 }, (_, i) => ({
     id: `wP${i + 1}`,
     type: "Pawn_w",
     color: "white",
     position: { x: i, y: 1 },
-
-    tunnelingUsed: false,
+    offside: {
+      x: 0,
+      y: 0,
+      z: 0,
+    },
   })),
 
-  // black
   {
     id: "bR1",
     type: "Rook_b",
+    //@ts-expect-error color is const
     color: "black",
     position: { x: 0, y: 7 },
   },
   {
     id: "bR2",
     type: "Rook_b",
+    //@ts-expect-error color is const
     color: "black",
     position: { x: 7, y: 7 },
   },
   {
     id: "bN1",
     type: "Knight_b",
+    //@ts-expect-error color is const
     color: "black",
     position: { x: 6, y: 7 },
     offside: {
@@ -98,30 +104,35 @@ const initialPieces: Piece[] = [
   {
     id: "bB1",
     type: "Bishop_b",
+    //@ts-expect-error color is const
     color: "black",
     position: { x: 5, y: 7 },
   },
   {
     id: "bQ",
     type: "queen_b",
+    //@ts-expect-error color is const
     color: "black",
     position: { x: 4, y: 7 },
   },
   {
     id: "bK",
     type: "King_b",
+    //@ts-expect-error color is const
     color: "black",
     position: { x: 3, y: 7 },
   },
   {
     id: "bB2",
     type: "Bishop_b",
+    //@ts-expect-error color is const
     color: "black",
     position: { x: 2, y: 7 },
   },
   {
     id: "bN2",
     type: "Knight_b",
+    //@ts-expect-error color is const
     color: "black",
     position: { x: 1, y: 7 },
     offside: {
@@ -130,13 +141,12 @@ const initialPieces: Piece[] = [
       z: 0,
     },
   },
+  //@ts-expect-error color is const
   ...Array.from({ length: 8 }, (_, i) => ({
     id: `bP${i + 1}`,
     type: "Pawn_b",
     color: "black",
     position: { x: i, y: 6 },
-    isSuperposed: false,
-    tunnelingUsed: false,
   })),
 ];
 
