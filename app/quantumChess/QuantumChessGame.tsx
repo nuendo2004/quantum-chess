@@ -122,8 +122,30 @@ export default function QuantumChessGame() {
     winner,
   ]);
 
+  const audioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (gameOver !== 0) {
+      audio.volume = 0.3;
+      audio.play();
+    } else {
+      const fadeInterval = setInterval(() => {
+        if (audio.volume > 0.05) {
+          audio.volume = Math.max(0, audio.volume - 0.05);
+        } else {
+          audio.volume = 0;
+          audio.pause();
+          audio.currentTime = 0;
+          clearInterval(fadeInterval);
+        }
+      }, 100);
+    }
+  }, [gameOver]);
+
   return (
     <div className="relative h-[92vh] flex flex-col lg:flex-row">
+      <audio ref={audioRef} src="/sounds/main_bg.mp3" loop defaultValue={0.1} />
       <Tips
         text={showTip.message || ""}
         show={showTip.state}

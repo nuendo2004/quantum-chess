@@ -24,7 +24,7 @@ const SignIn = () => {
     if (result?.error) {
       setMessage(result.error);
     } else {
-      router.push("/home");
+      router.push("/");
     }
   };
 

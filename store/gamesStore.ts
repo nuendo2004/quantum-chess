@@ -16,7 +16,10 @@ import {
   aiPieceMap,
   getAllAvailableMoves,
   playCaptureSound,
+  playCollapseSound,
+  playEntanglementSound,
   playMoveSound,
+  playSuperpositionSound,
 } from "./tranditionalRule";
 
 export type Position = { x: number; y: number };
@@ -299,6 +302,7 @@ const useGameStore = create<GameState>((set, get) => ({
 
   /* ------------------------ Super‑position utilities --------------------- */
   initializeSuperposition: (piece) => {
+    playSuperpositionSound();
     const sup = new Map(get().superPositions);
     if (sup.has(piece.id)) return; // already quantum
     for (const er of get().entanglements.values()) {
@@ -570,7 +574,7 @@ const useGameStore = create<GameState>((set, get) => ({
     const rootId = baseId(piece.id);
     const rec = sup.get(rootId);
     if (!rec) return;
-
+    playCollapseSound();
     const branches = [rec.originalId, rec.cloneId].filter(Boolean) as string[];
     const killId = branches[Math.floor(Math.random() * branches.length)];
 
@@ -609,6 +613,7 @@ const useGameStore = create<GameState>((set, get) => ({
   },
 
   initializeEntanglement: () => {
+    playEntanglementSound();
     set({
       onSelectEntangle: true,
       playerQuantumEnergy: get().playerQuantumEnergy - 100,
