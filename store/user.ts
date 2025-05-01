@@ -48,7 +48,7 @@ interface AppStoreActions {
   updateGameProfile: (updates: Partial<GameProfileState>) => void;
   incrementQuantumChessWin: (totalGamesIncrement?: number) => void;
   incrementPuzzlesSolved: (isPerfect?: boolean) => void;
-  updateRankAndXp: (rank: string, xp: number) => void;
+  updateRankAndXp: (rank: string | null, xp: number) => void;
   updateProgress: (progress: {
     quantumChessSkills?: number;
     puzzleSolving?: number;
@@ -74,6 +74,17 @@ export const useUserStore = create<AppStoreState & AppStoreActions>()(
       isLoading: false,
 
       setLoading: (loading) => set({ isLoading: loading }),
+
+      updateGameProfile: async (updates) => {
+        const res = await fetch("/api/gameProfile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+        if (!res.ok) throw new Error("Failed to update gameProfile");
+        const { gameProfile } = await res.json();
+        set({ gameProfile });
+      },
 
       setUser: (user) => {
         const userWithDates = {
@@ -104,12 +115,12 @@ export const useUserStore = create<AppStoreState & AppStoreActions>()(
       },
       clearGameProfile: () => set({ gameProfile: null }),
 
-      updateGameProfile: (updates) =>
-        set((state) => ({
-          gameProfile: state.gameProfile
-            ? { ...state.gameProfile, ...updates, updatedAt: new Date() }
-            : null,
-        })),
+      // updateGameProfile: (updates) =>
+      //   set((state) => ({
+      //     gameProfile: state.gameProfile
+      //       ? { ...state.gameProfile, ...updates, updatedAt: new Date() }
+      //       : null,
+      //   })),
 
       incrementQuantumChessWin: (totalGamesIncrement = 1) =>
         set((state) => {
@@ -144,10 +155,14 @@ export const useUserStore = create<AppStoreState & AppStoreActions>()(
       updateRankAndXp: (rank, xp) =>
         set((state) => {
           if (!state.gameProfile) return {};
+          state.updateGameProfile({
+            currentRank: rank || state.gameProfile.currentRank,
+            xp,
+          });
           return {
             gameProfile: {
               ...state.gameProfile,
-              currentRank: rank,
+              currentRank: rank || state.gameProfile.currentRank,
               xp,
               updatedAt: new Date(),
             },
@@ -162,10 +177,11 @@ export const useUserStore = create<AppStoreState & AppStoreActions>()(
             gameProfile: {
               ...cp,
               quantumChessSkillsProgress:
-                progress.quantumChessSkills ?? cp.quantumChessSkillsProgress,
+                progress.quantumChessSkills ||
+                0 + cp.quantumChessSkillsProgress,
               puzzleSolvingProgress:
-                progress.puzzleSolving ?? cp.puzzleSolvingProgress,
-              learningProgress: progress.learning ?? cp.learningProgress,
+                progress.puzzleSolving || 0 + cp.puzzleSolvingProgress,
+              learningProgress: progress.learning || 0 + cp.learningProgress,
               updatedAt: new Date(),
             },
           };

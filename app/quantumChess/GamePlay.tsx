@@ -1,4 +1,4 @@
-import React, { ReactNode, useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   HiOutlineUserCircle,
   HiOutlineChip,
@@ -8,21 +8,15 @@ import {
 import { FcShop } from "react-icons/fc";
 import useGameStore from "@/store/gamesStore";
 import { FaAtom, FaRing, FaFlag } from "react-icons/fa";
+import { IoInformationCircle } from "react-icons/io5";
 
 const MAX_QUANTUM_ENERGY = 100;
 
 type GamePlayProp = {
-  setShowTip: React.Dispatch<
-    React.SetStateAction<{
-      state: boolean;
-      message: string | null;
-      link: ReactNode;
-    }>
-  >;
   setShowKnowledge: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-const GamePlay: React.FC<GamePlayProp> = ({ setShowTip, setShowKnowledge }) => {
+const GamePlay: React.FC<GamePlayProp> = ({ setShowKnowledge }) => {
   const {
     currentPlayer,
     gameScore: score,
@@ -111,67 +105,43 @@ const GamePlay: React.FC<GamePlayProp> = ({ setShowTip, setShowKnowledge }) => {
       </div>
 
       <div className="">
-        <div className="flex flex-col space-x-4">
-          {/* Superposition */}
-          <div className="relative group">
-            <button
-              disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
-              onClick={() => initializeSuperposition(selectedPiece!)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition"
-            >
-              <FaAtom className="mr-2" />
-              Superposition Move
-            </button>
-            <span
-              onClick={() => {
-                setShowKnowledge(true);
-                setShowTip({
-                  state: true,
-                  message: "Tip: You can read more about superposition ",
-                  link: "Superposition",
-                });
-              }}
-              className="absolute bottom-full left-1/2 mb-2 w-max max-w-xs -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-auto cursor-pointer"
-            >
-              What’s superposition? Click to learn more!
-            </span>
-          </div>
+        <div className="flex justify-between items-center py-3">
+          <h3 className="text-xl"> Quantum Moves</h3>
+          <IoInformationCircle
+            size={30}
+            onClick={() => setShowKnowledge(true)}
+          />
+        </div>
 
-          <div className="relative group inline-block">
-            <button
-              disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
-              onClick={() => initializeEntanglement(selectedPiece!)}
-              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition"
-            >
-              <FaRing className="mr-2" />
-              Entanglement Move
-            </button>
-            <span
-              onClick={() => {
-                setShowKnowledge(true);
-                setShowTip({
-                  state: true,
-                  message: "Tip: You can read more about entanglements ",
-                  link: "Entanglement",
-                });
-              }}
-              className="absolute bottom-full left-1/2 mb-2 w-max max-w-xs -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-auto cursor-pointer"
-            >
-              How does entanglement work? Tap here!
-            </span>
-          </div>
+        <div className="flex flex-col border-1 rounded-2xl p-4 gap-3">
+          <button
+            disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
+            onClick={() => initializeSuperposition(selectedPiece!)}
+            className="flex text-nowrap items-center px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition"
+          >
+            <FaAtom className="mr-2" />
+            Superposition Move
+          </button>
 
           <button
             disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
-            onClick={() => {
-              setWinner(playerColor === "white" ? "black" : "white");
-            }}
-            className="flex items-center px-4 py-2 bg-red-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition"
+            onClick={() => initializeEntanglement(selectedPiece!)}
+            className="flex text-nowrap items-center px-4 py-2 bg-purple-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition"
           >
-            <FaFlag className="mr-2" />
-            Resign
+            <FaRing className="mr-2" />
+            Entanglement Move
           </button>
         </div>
+        <button
+          disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
+          onClick={() => {
+            setWinner(playerColor === "white" ? "black" : "white");
+          }}
+          className="flex w-full my-3 items-center px-4 py-2 bg-red-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition"
+        >
+          <FaFlag className="mr-2" />
+          Resign
+        </button>
       </div>
     </div>
   );

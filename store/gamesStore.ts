@@ -190,7 +190,6 @@ const useGameStore = create<GameState>((set, get) => ({
   /*                             Game Mechanics                              */
   /* ----------------------------------------------------------------------- */
   movePiece: (piece, dest) => {
-    playMoveSound();
     console.log("Moving piece: ", get().game.board.configuration.turn);
     if (!piece) return;
     const state = get();
@@ -205,7 +204,7 @@ const useGameStore = create<GameState>((set, get) => ({
       )
         return;
     }
-
+    playMoveSound();
     // Handle capture
     if (target) {
       state.capturePiece(piece, target);
