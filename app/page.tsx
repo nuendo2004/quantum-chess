@@ -9,6 +9,8 @@ import React from "react";
 import ResourceCard from "@/components/home/ResourceCard";
 import AchievementBadge from "@/components/home/AchievementBadge";
 import GameCard from "@/components/home/GameCard";
+import Link from "next/link";
+
 
 export default function Home() {
   return (
@@ -41,19 +43,27 @@ export default function Home() {
           Featured Games
         </h2>
         <div className="grid md:grid-cols-2 gap-8">
+          <Link href="/quantumChess">
+            <GameCard
+              title="Quantum Chess"
+              icon={<PuzzlePieceIcon className="h-8 w-8" />}
+              description="Make superposition moves and entangle pieces in this mind-bending chess variant"
+              bgColor="bg-purple-100 dark:bg-purple-900"
+            />
+          </Link>
+
+          <Link href="/quantumMaze">
           <GameCard
-            title="Quantum Chess"
-            icon={<PuzzlePieceIcon className="h-8 w-8" />}
-            description="Make superposition moves and entangle pieces in this mind-bending chess variant"
-            bgColor="bg-purple-100 dark:bg-purple-900"
-          />
-          <GameCard
-            title="Particle Puzzle"
-            icon={<PuzzlePieceIcon className="h-8 w-8" />}
-            description="Solve quantum states puzzles to advance through particle worlds"
-            bgColor="bg-indigo-100 dark:bg-indigo-900"
-          />
+              title="Particle Puzzle"
+              icon={<PuzzlePieceIcon className="h-8 w-8" />}
+              description="Solve quantum states puzzles to advance through particle worlds"
+              bgColor="bg-indigo-100 dark:bg-indigo-900"
+              href="/quantumMaze"  // ✅ Add this line
+            />
+
+          </Link>
         </div>
+
       </section>
 
       <section className="bg-white dark:bg-slate-800 py-20">
