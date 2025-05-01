@@ -96,7 +96,7 @@ const ChessBoard = () => {
             })
         )
     );
-  }, [selectedPiece, selectedPiece, validMoves, lastMove]);
+  }, [selectedPiece, getPieceColor, movePiece]);
 
   return (
     <group position={[-3.5, 0, -3.5]}>

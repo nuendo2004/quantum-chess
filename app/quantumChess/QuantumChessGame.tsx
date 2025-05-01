@@ -112,6 +112,7 @@ export default function QuantumChessGame() {
         updateProgress({ quantumChessSkills: 200 });
       } else updateProgress({ quantumChessSkills: 100 });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     incrementQuantumChessWin,
     playerColor,

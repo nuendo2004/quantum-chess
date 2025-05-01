@@ -3,6 +3,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import ProfileMenu from "./ProfileMenu";
 import { useUserStore } from "@/store/user";
+import Link from "next/link";
 
 const Navbar: React.FC = () => {
   const { user } = useUserStore((state) => state);
@@ -38,12 +39,12 @@ const Navbar: React.FC = () => {
             >
               Achievements
             </a>
-            <a
+            <Link
               href="/blogs"
               className="hover:text-purple-600 dark:hover:text-purple-400"
             >
               Learn
-            </a>
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
             {user ? (
