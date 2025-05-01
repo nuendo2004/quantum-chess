@@ -53,15 +53,14 @@ export default function Home() {
           </Link>
 
           <Link href="/quantumMaze">
-          <GameCard
+            <GameCard
               title="Particle Puzzle"
               icon={<PuzzlePieceIcon className="h-8 w-8" />}
               description="Solve quantum states puzzles to advance through particle worlds"
               bgColor="bg-indigo-100 dark:bg-indigo-900"
-              href="/quantumMaze"  // ✅ Add this line
             />
-
           </Link>
+
         </div>
 
       </section>
