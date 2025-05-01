@@ -15,7 +15,7 @@ export const BlogPostCard = ({
   const isDraft = !post.published;
 
   return (
-    <Link href={`/blog/${post.slug}`} legacyBehavior={false} passHref>
+    <Link href={`/blogs/${post.slug}`} legacyBehavior={false} passHref>
       <motion.div
         layout
         className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden flex flex-col cursor-pointer group h-full"

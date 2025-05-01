@@ -1,5 +1,9 @@
-export default function GeneralKnowledge() {
-  return (
+import { useState } from "react";
+import Superposition from "./Superposition";
+import Entanglement from "./Entanglement";
+
+const GeneralKnowledge = () => {
+  const [curretConponent, setCurrentComponent] = useState(
     <div className="flex flex-col gap-2">
       <h2 className="text-3xl font-bold">What Is Quantum Chess?</h2>
       <p className="text-lg">
@@ -20,6 +24,22 @@ export default function GeneralKnowledge() {
       <p className="text-lg font-semibold text-purple-300">
         It’s part strategy, part chaos, and 100% brain-bending fun.
       </p>
+
+      <div
+        onClick={() => setCurrentComponent(<Superposition />)}
+        className="underline cursor-pointer"
+      >
+        How do I make a Superposition Move
+      </div>
+      <div
+        onClick={() => setCurrentComponent(<Entanglement />)}
+        className="underline cursor-pointer"
+      >
+        How do I make a Entanglement Move
+      </div>
     </div>
   );
-}
+  return curretConponent;
+};
+
+export default GeneralKnowledge;

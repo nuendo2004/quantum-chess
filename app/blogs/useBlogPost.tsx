@@ -6,7 +6,6 @@ import {
   sortPage,
 } from "./SORT_OPTIONS";
 import { BlogPost } from "./type";
-import mockBlogPosts from "./tempData";
 
 export default function useBlogPage() {
   const [allBlogPosts, setAllBlogPosts] = useState<BlogPost[]>([]);
@@ -16,12 +15,22 @@ export default function useBlogPage() {
   const [sortOption, setSortOption] = useState<string>(SORT_OPTIONS.DATE_DESC);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAllBlogPosts(mockBlogPosts);
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
+    setIsLoading(true);
+    fetch("/api/posts")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load posts");
+        return res.json();
+      })
+      .then((data: BlogPost[]) => {
+        setAllBlogPosts(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        setAllBlogPosts([]);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   useEffect(() => {

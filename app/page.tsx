@@ -36,7 +36,6 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Featured Games */}
       <section className="container mx-auto px-6 py-16">
         <h2 className="text-3xl font-bold text-center mb-12 dark:text-white">
           Featured Games
@@ -57,7 +56,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Leaderboard Preview */}
       <section className="bg-white dark:bg-slate-800 py-20">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
@@ -97,7 +95,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Achievements Showcase */}
       <section className="container mx-auto px-6 py-20">
         <h3 className="text-3xl font-bold mb-12 dark:text-white flex items-center gap-2 justify-center">
           <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">

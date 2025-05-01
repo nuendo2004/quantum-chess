@@ -2,14 +2,16 @@
 
 import { useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useAppStore } from "../store/user";
+import { useUserStore } from "../store/user";
 
 function StoreInitializer() {
   const { data: session, status } = useSession();
-  const setLoading = useAppStore((state) => state.setLoading);
-  const setUserAndProfile = useAppStore((state) => state.setUserAndProfile);
-  const clearUserAndProfile = useAppStore((state) => state.clearUserAndProfile);
-  const zustandUser = useAppStore((state) => state.user);
+  const setLoading = useUserStore((state) => state.setLoading);
+  const setUserAndProfile = useUserStore((state) => state.setUserAndProfile);
+  const clearUserAndProfile = useUserStore(
+    (state) => state.clearUserAndProfile
+  );
+  const zustandUser = useUserStore((state) => state.user);
 
   const fetchedUserIdRef = useRef<string | null>(null);
 
@@ -28,7 +30,13 @@ function StoreInitializer() {
         return;
       }
 
-      if (status === "authenticated" && session?.user?.id) {
+      if (status === "authenticated" && session?.user?.id && !zustandUser) {
+        console.log(
+          "refetch........",
+          status === "authenticated",
+          session?.user?.id,
+          zustandUser
+        );
         const currentUserId = session.user.id;
 
         if (fetchedUserIdRef.current === currentUserId) {

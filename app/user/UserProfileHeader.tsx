@@ -7,7 +7,8 @@ import {
   ShieldCheckIcon,
   TrophyIcon,
 } from "@heroicons/react/24/outline";
-import { User } from "@prisma/client";
+import { GameProfile, User } from "@prisma/client";
+import { PiCoinsDuotone } from "react-icons/pi";
 
 interface UserProfileHeaderProps {
   user: User;
@@ -17,6 +18,7 @@ interface UserProfileHeaderProps {
   onSave: () => void;
   onEditToggle: () => void;
   onCancelEdit: () => void;
+  gameProfile: GameProfile | null;
 }
 
 export default function UserProfileHeader({
@@ -27,6 +29,7 @@ export default function UserProfileHeader({
   onSave,
   onEditToggle,
   onCancelEdit,
+  gameProfile,
 }: UserProfileHeaderProps) {
   return (
     <motion.div
@@ -72,12 +75,20 @@ export default function UserProfileHeader({
                 data-testid="user-name-input"
               />
             ) : (
-              <h1
-                className="text-3xl font-bold dark:text-white mr-auto"
-                data-testid="user-name-display"
-              >
-                {user.name || "Unnamed User"}
-              </h1>
+              <div className="flex gap-8 mr-auto items-center">
+                <h1
+                  className="text-3xl font-bold dark:text-white"
+                  data-testid="user-name-display"
+                >
+                  {user.name || "Unnamed User"}
+                </h1>
+                {gameProfile && (
+                  <div className="flex items-center gap-3 text-amber-300">
+                    <PiCoinsDuotone size={30} />{" "}
+                    <h2 className="text-3xl">{gameProfile.inGameToken}</h2>
+                  </div>
+                )}
+              </div>
             )}
             <div className="flex gap-2 items-center flex-shrink-0">
               <button
@@ -122,6 +133,10 @@ export default function UserProfileHeader({
                   : "Unknown"}
               </span>
             </div>
+            <p>
+              Last login:{" "}
+              {gameProfile?.lastLoggedIn?.toLocaleString("en-US") || "Never"}
+            </p>
           </div>
         </div>
       </div>

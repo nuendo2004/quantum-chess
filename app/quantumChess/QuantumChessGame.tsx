@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode, useState } from "react";
+import React, { useState } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Environment, OrbitControls, Loader, useGLTF } from "@react-three/drei";
 import { Suspense, useRef } from "react";
@@ -14,6 +14,7 @@ import ChessGameOverlay from "./ChessGameOverlay";
 import { useEffect } from "react";
 import { Tips } from "./Tips";
 import { FaTimes } from "react-icons/fa";
+import { useUserStore } from "@/store/user";
 import GeneralKnowledge from "./Knowledge/GeneralKnowledge";
 
 useGLTF.preload("/model/chess_set_new.glb");
@@ -65,15 +66,20 @@ function TransitionCameraRig({ target = new THREE.Vector3(0, 7, -4) }) {
 
 export default function QuantumChessGame() {
   const { nodes } = useGLTF("/model/chess_set_new.glb");
-  const { message, gameOver, setGameOver } = useGameStore((state) => state);
+  const { message, gameOver, setGameOver, winner, playerXP, playerColor } =
+    useGameStore((state) => state);
+  const {
+    updateRankAndXp,
+    gameProfile,
+    incrementQuantumChessWin,
+    updateProgress,
+  } = useUserStore((state) => state);
   const [showTip, setShowTip] = useState<{
     state: boolean;
     message: string | null;
-    link: ReactNode;
   }>({
     state: false,
     message: null,
-    link: null,
   });
   const [showKnowledge, setShowKnowledge] = useState(false);
   useEffect(() => {
@@ -83,7 +89,6 @@ export default function QuantumChessGame() {
           state: true,
           message:
             "Tip: Use Superposition move or Entanglement move to gain advantage! Read more ",
-          link: <GeneralKnowledge />,
         });
     }, 2000);
   }, [gameOver]);
@@ -91,12 +96,31 @@ export default function QuantumChessGame() {
   useEffect(() => {
     if (showTip) {
       const timer = setTimeout(
-        () => setShowTip({ state: false, message: "", link: null }),
+        () => setShowTip({ state: false, message: "" }),
         10000
       );
       return () => clearTimeout(timer);
     }
   }, [showTip]);
+
+  useEffect(() => {
+    if (winner) {
+      console.log("update xp");
+      updateRankAndXp(null, (gameProfile?.xp || 0) + playerXP);
+      if (winner === playerColor) {
+        incrementQuantumChessWin();
+        updateProgress({ quantumChessSkills: 200 });
+      } else updateProgress({ quantumChessSkills: 100 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    incrementQuantumChessWin,
+    playerColor,
+    playerXP,
+    updateProgress,
+    updateRankAndXp,
+    winner,
+  ]);
 
   return (
     <div className="relative h-[92vh] flex flex-col lg:flex-row">
@@ -141,7 +165,7 @@ export default function QuantumChessGame() {
           >
             <FaTimes />
           </button>
-          {showTip.link}
+          {<GeneralKnowledge />}
         </div>
       )}
 
@@ -160,10 +184,7 @@ export default function QuantumChessGame() {
                 {message}
               </div>
             )}
-            <GamePlay
-              setShowTip={setShowTip}
-              setShowKnowledge={setShowKnowledge}
-            />
+            <GamePlay setShowKnowledge={setShowKnowledge} />
           </motion.div>
         )}
       </AnimatePresence>
