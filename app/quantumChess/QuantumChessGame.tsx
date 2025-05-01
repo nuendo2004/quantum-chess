@@ -66,8 +66,15 @@ function TransitionCameraRig({ target = new THREE.Vector3(0, 7, -4) }) {
 
 export default function QuantumChessGame() {
   const { nodes } = useGLTF("/model/chess_set_new.glb");
-  const { message, gameOver, setGameOver, winner, playerXP, playerColor } =
-    useGameStore((state) => state);
+  const {
+    message,
+    gameOver,
+    setGameOver,
+    winner,
+    playerXP,
+    playerColor,
+    setMessage,
+  } = useGameStore((state) => state);
   const {
     updateRankAndXp,
     gameProfile,
@@ -104,8 +111,14 @@ export default function QuantumChessGame() {
   }, [showTip]);
 
   useEffect(() => {
+    if (!message) return;
+    setTimeout(() => {
+      setMessage(null);
+    }, 2000);
+  }, [message, setMessage]);
+
+  useEffect(() => {
     if (winner) {
-      console.log("update xp");
       updateRankAndXp(null, (gameProfile?.xp || 0) + playerXP);
       if (winner === playerColor) {
         incrementQuantumChessWin();
@@ -122,33 +135,73 @@ export default function QuantumChessGame() {
     winner,
   ]);
 
+  const audioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (gameOver !== 0) {
+      audio.volume = 0.3;
+      audio.play();
+    } else {
+      const fadeInterval = setInterval(() => {
+        if (audio.volume > 0.05) {
+          audio.volume = Math.max(0, audio.volume - 0.05);
+        } else {
+          audio.volume = 0;
+          audio.pause();
+          audio.currentTime = 0;
+          clearInterval(fadeInterval);
+        }
+      }, 100);
+    }
+  }, [gameOver]);
+
   return (
-    <div className="relative h-[92vh] flex flex-col lg:flex-row">
-      <Tips
-        text={showTip.message || ""}
-        show={showTip.state}
-        setShowKnowledge={setShowKnowledge}
-      />
-      <Canvas camera={{ position: [0, 7, -4] }}>
-        <Suspense fallback={null}>
-          {gameOver === -1 && <IntroCameraRig />}
-          {gameOver === 1 && (
-            <TransitionCameraRig target={new THREE.Vector3(0, 7, -4)} />
+    <div className="relative h-[92vh] flex flex-col lg:flex-row w-full">
+      <audio ref={audioRef} src="/sounds/main_bg.mp3" loop defaultValue={0.1} />
+      <div className="relative flex-1 min-w-0 h-full">
+        <Tips
+          text={showTip.message || ""}
+          show={showTip.state}
+          setShowKnowledge={setShowKnowledge}
+        />
+        <Canvas camera={{ position: [0, 7, -4] }}>
+          <Suspense fallback={null}>
+            {gameOver === -1 && <IntroCameraRig />}
+            {gameOver === 1 && (
+              <TransitionCameraRig target={new THREE.Vector3(0, 7, -4)} />
+            )}
+            {gameOver === 0 && <ResetCameraOnStart />}
+            <ambientLight intensity={1} />
+            <pointLight position={[10, 10, 10]} intensity={3} />
+            <hemisphereLight
+              color="#ffffff"
+              groundColor="#b4b4b4"
+              intensity={0.6}
+            />
+            <Environment files="/hdr/clear_sky.hdr" background />
+            <OrbitControls enabled={gameOver === 0} />
+            <ChessBoard />
+            <PiecesGroup nodes={nodes} />
+          </Suspense>
+        </Canvas>
+        <AnimatePresence>
+          {message && (
+            <motion.div
+              className="
+                      absolute top-4 right-0 transform -translate-x-1/2 min-w-[100px]
+                      bg-white border mb-4 border-gray-300 rounded shadow-lg p-4 text-black px-4 py-2 z-50
+                    "
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -50, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 120, damping: 20 }}
+            >
+              {message}
+            </motion.div>
           )}
-          {gameOver === 0 && <ResetCameraOnStart />}
-          <ambientLight intensity={1} />
-          <pointLight position={[10, 10, 10]} intensity={3} />
-          <hemisphereLight
-            color="#ffffff"
-            groundColor="#b4b4b4"
-            intensity={0.6}
-          />
-          <Environment files="/hdr/clear_sky.hdr" background />
-          <OrbitControls enabled={gameOver === 0} />
-          <ChessBoard />
-          <PiecesGroup nodes={nodes} />
-        </Suspense>
-      </Canvas>
+        </AnimatePresence>
+      </div>
 
       {showKnowledge && (
         <div
@@ -179,11 +232,6 @@ export default function QuantumChessGame() {
             transition={{ type: "tween", duration: 0.5 }}
             className="min-w-[300px] min-h-[200px] p-3"
           >
-            {message && (
-              <div className="bg-white border mb-4 border-gray-300 rounded shadow-lg p-4 text-black">
-                {message}
-              </div>
-            )}
             <GamePlay setShowKnowledge={setShowKnowledge} />
           </motion.div>
         )}

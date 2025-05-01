@@ -33,7 +33,7 @@ const SignUp = () => {
   };
 
   const handleGoogleSignUp = async () => {
-    await signIn("google", { callbackUrl: "/home" });
+    await signIn("google", { callbackUrl: "/" });
   };
 
   return (

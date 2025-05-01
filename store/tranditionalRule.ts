@@ -59,6 +59,12 @@ const playEntanglementSound = () => {
   sound.play();
 };
 
+const playCheck = () => {
+  const sound = new Audio("/sounds/check.mp3");
+  sound.volume = 0.5;
+  sound.play();
+};
+
 export {
   getAllAvailableMoves,
   aiPieceMap,
@@ -67,5 +73,6 @@ export {
   playSuperpositionSound,
   playEntanglementSound,
   playCollapseSound,
+  playCheck,
 };
 export type { AiPieceCode };

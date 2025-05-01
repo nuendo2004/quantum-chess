@@ -94,7 +94,7 @@ describe("SignIn Component", () => {
     );
 
     expect(mockSignIn).toHaveBeenCalledWith("google", {
-      callbackUrl: "/home",
+      callbackUrl: "/",
     });
   });
 
