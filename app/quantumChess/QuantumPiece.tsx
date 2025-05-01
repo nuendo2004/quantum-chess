@@ -1,4 +1,4 @@
-import { Piece } from "@/store/gamesStore";
+import { baseId, Piece } from "@/store/gamesStore";
 import { useMemo, useRef } from "react";
 import { Mesh, Group } from "three";
 import useGameStore from "@/store/gamesStore";
@@ -33,6 +33,7 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
   const groupScale = 0.0035;
   const diamondRelativeScale = diamondWorldScale / groupScale;
   const ringRelativeScale = 0.14 / groupScale;
+  const rootId = baseId(piece.id);
 
   const inEntanglement = useMemo(() => {
     for (const rec of entanglements.values()) {
@@ -53,7 +54,7 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
     >
       {/* @ts-expect-error Allow unknown model type for primitive */}
       <primitive object={model.clone()} />
-      {superPositions.has(piece.id) && (
+      {superPositions.has(rootId) && (
         <mesh
           ref={diamondRef}
           position={[1, 520, 0]}
