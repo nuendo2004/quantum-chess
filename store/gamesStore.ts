@@ -59,7 +59,7 @@ interface GameState {
   playerColor: "white" | "black";
   selectedPiece: Piece | null;
   validMoves: Position[];
-  game: any;
+  game: Game;
   gameScore: number;
   lastMove: { from: string; to: string } | null;
   message: string | null;
@@ -84,13 +84,14 @@ interface GameState {
   setGameOver: (n: number) => void;
   setWinner: (winner: string) => void;
   restartGame: () => void;
+  tickEntanglements: () => void;
 }
 
 // ---------------------------------------------------------------------------
 // Helper utilities
 // ---------------------------------------------------------------------------
-const baseId = (id: string) => id.replace(/-copy$/, "");
-const isClone = (id: string) => id.endsWith("-copy");
+export const baseId = (id: string) => id.replace(/-copy$/, "");
+export const isClone = (id: string) => id.endsWith("-copy");
 
 const findCoordById = (
   board: Map<string, Piece>,
@@ -169,7 +170,7 @@ const useGameStore = create<GameState>((set, get) => ({
         allyPos: state.selectedPiece.position,
         enemyId: piece.id,
         enemyPos: piece.position,
-        turnsLeft: 3,
+        turnsLeft: 5,
       });
       set({
         entanglements: ent,
@@ -250,6 +251,7 @@ const useGameStore = create<GameState>((set, get) => ({
     // Flip turn & process quantum timers
     set({ currentPlayer: state.currentPlayer === "white" ? "black" : "white" });
     get().tickSuperPositions();
+    get().tickEntanglements();
 
     // Fire AI move if it's now AI's turn
     if (get().currentPlayer !== get().playerColor) {
