@@ -33,12 +33,6 @@ const Navbar: React.FC = () => {
             >
               Leaderboard
             </a>
-            <a
-              href="/achievements"
-              className="hover:text-purple-600 dark:hover:text-purple-400"
-            >
-              Achievements
-            </a>
             <Link
               href="/blogs"
               className="hover:text-purple-600 dark:hover:text-purple-400"

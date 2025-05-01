@@ -31,12 +31,6 @@ function StoreInitializer() {
       }
 
       if (status === "authenticated" && session?.user?.id && !zustandUser) {
-        console.log(
-          "refetch........",
-          status === "authenticated",
-          session?.user?.id,
-          zustandUser
-        );
         const currentUserId = session.user.id;
 
         if (fetchedUserIdRef.current === currentUserId) {
@@ -64,7 +58,6 @@ function StoreInitializer() {
           } else {
             const data = await response.json();
             if (data.user) {
-              console.log("Profile data fetched successfully. Updating store.");
               setUserAndProfile(data.user, data.gameProfile);
               fetchedUserIdRef.current = currentUserId;
             } else {

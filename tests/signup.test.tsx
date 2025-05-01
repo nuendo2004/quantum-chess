@@ -108,7 +108,7 @@ describe("SignUp Component", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Continue with Google" })
     );
-    expect(signIn).toHaveBeenCalledWith("google", { callbackUrl: "/home" });
+    expect(signIn).toHaveBeenCalledWith("google", { callbackUrl: "/" });
   });
 
   test("validates required fields", () => {

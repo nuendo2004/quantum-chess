@@ -1,7 +1,13 @@
 "use client";
 import { getCoord, Grid } from "@/store/ChessBoardMapping";
 import useGameStore, { Position } from "@/store/gamesStore";
+import { Text } from "@react-three/drei";
 import React, { useCallback, useMemo } from "react";
+
+const filesBottom = ["H", "G", "F", "E", "D", "C", "B", "A"];
+const filesTop = ["H", "G", "F", "E", "D", "C", "B", "A"];
+const ranksLeft = ["1", "2", "3", "4", "5", "6", "7", "8"];
+const ranksRight = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 const ChessBoard = () => {
   const {
@@ -98,10 +104,84 @@ const ChessBoard = () => {
     );
   }, [selectedPiece, getPieceColor, movePiece]);
 
+  const frame = (
+    <mesh position={[4, -0.06, 4]}>
+      {/* 9×9 box: 8 × 8 board + 0.5-unit wooden rail all around */}
+      <boxGeometry args={[9, 0.2, 9]} />
+      <meshStandardMaterial color="#8B5A2B" />
+    </mesh>
+  );
+  const letters = [
+    /* bottom edge (south / White’s side) */
+    ...filesBottom.map((f, i) => (
+      <Text
+        key={`bot-${f}`}
+        position={[i + 0.5, 0.11, -0.25]} // half-square offset
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.25}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {f}
+      </Text>
+    )),
+
+    /* top edge (north / Black’s side) – flipped so it’s upright for the far player */
+    ...filesTop.map((f, i) => (
+      <Text
+        key={`top-${f}`}
+        position={[i + 0.5, 0.11, 8.25]}
+        rotation={[-Math.PI / 2, Math.PI, 0]} // 180° turn around Y
+        fontSize={0.25}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {f}
+      </Text>
+    )),
+
+    /* left edge (west) */
+    ...ranksLeft.map((r, j) => (
+      <Text
+        key={`left-${r}`}
+        position={[-0.25, 0.11, j + 0.5]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.25}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {r}
+      </Text>
+    )),
+
+    /* right edge (east) – rotated so it’s upright from that side */
+    ...ranksRight.map((r, j) => (
+      <Text
+        key={`right-${r}`}
+        position={[8.25, 0.11, j + 0.5]}
+        rotation={[-Math.PI / 2, Math.PI, 0]}
+        fontSize={0.25}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {r}
+      </Text>
+    )),
+  ];
+
   return (
-    <group position={[-3.5, 0, -3.5]}>
-      {renderBoard}
-      {selectedPiece && renderMoveIndicator}
+    <group position={[-4, 0, -4]}>
+      {frame}
+      <group position={[0.5, 0, 0.5]}>
+        {renderBoard} {selectedPiece && renderMoveIndicator}
+      </group>
+      {/* {renderBoard} */}
+
+      {letters}
     </group>
   );
 };

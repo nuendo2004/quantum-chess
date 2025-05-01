@@ -9,8 +9,10 @@ import React from "react";
 import ResourceCard from "@/components/home/ResourceCard";
 import AchievementBadge from "@/components/home/AchievementBadge";
 import GameCard from "@/components/home/GameCard";
+import { useUserStore } from "@/store/user";
 
 export default function Home() {
+  const { user } = useUserStore((state) => state);
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800">
       <section className="container mx-auto px-6 py-20 text-center">
@@ -30,9 +32,16 @@ export default function Home() {
             Master quantum concepts through chess, puzzles, and challenges.
             Compete with friends and earn cool rewards!
           </p>
-          <button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all transform hover:scale-105">
-            Start Playing Now!
-          </button>
+          {!user && (
+            <button
+              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all transform hover:scale-105"
+              onClick={() => {
+                location.href = "/signin";
+              }}
+            >
+              Start Playing Now!
+            </button>
+          )}
         </motion.div>
       </section>
 
@@ -85,7 +94,7 @@ export default function Home() {
             </div>
             <div className="mt-8 text-center">
               <a
-                href="/leaderboard"
+                href="/ranking"
                 className="text-purple-600 hover:text-purple-700 dark:text-purple-400 font-semibold"
               >
                 See Full Leaderboard →

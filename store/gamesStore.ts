@@ -16,6 +16,7 @@ import {
   aiPieceMap,
   getAllAvailableMoves,
   playCaptureSound,
+  playCheck,
   playCollapseSound,
   playEntanglementSound,
   playMoveSound,
@@ -58,7 +59,7 @@ interface GameState {
   playerColor: "white" | "black";
   selectedPiece: Piece | null;
   validMoves: Position[];
-  game: Game;
+  game: any;
   gameScore: number;
   lastMove: { from: string; to: string } | null;
   message: string | null;
@@ -69,6 +70,7 @@ interface GameState {
   playerXP: number;
   winner: null | string;
 
+  setMessage: (message: string | null) => void;
   handlePieceClick: (piece: Piece) => void;
   movePiece: (piece: Piece | null, dest: Position) => void;
   capturePiece: (taker: Piece, loser: Piece) => void;
@@ -138,6 +140,9 @@ const useGameStore = create<GameState>((set, get) => ({
     set({ ...initialState, currentPlayer: "white", playerColor: "white" });
   },
 
+  setMessage: (message) => {
+    set({ message });
+  },
   /* ------------------------------ UI actions ------------------------------ */
   handlePieceClick: (piece) => {
     // handle entanglement selection
@@ -175,25 +180,27 @@ const useGameStore = create<GameState>((set, get) => ({
     }
 
     // Ignore clicks during opponent's turn
-    if (get().currentPlayer !== get().playerColor) return;
+    // if (get().currentPlayer !== get().playerColor) return;
     // Update valid moves
     const currentValidMoves = getAllAvailableMoves(piece, get().game);
     const prev = get().selectedPiece;
-    if (!prev || piece.color === get().currentPlayer) {
-      set({ selectedPiece: piece, validMoves: currentValidMoves });
+
+    if (
+      prev &&
+      piece.color !== get().playerColor &&
+      piece.color !== prev?.color
+    ) {
+      get().movePiece(prev, piece.position);
       return;
     }
-    // capture piece
-    if (piece.color !== get().playerColor) {
-      get().movePiece(prev, piece.position);
-    }
+
+    set({ selectedPiece: piece, validMoves: currentValidMoves });
   },
 
   /* ----------------------------------------------------------------------- */
   /*                             Game Mechanics                              */
   /* ----------------------------------------------------------------------- */
   movePiece: (piece, dest) => {
-    console.log("Moving piece: ", get().game.board.configuration.turn);
     if (!piece) return;
     const state = get();
 
@@ -226,10 +233,7 @@ const useGameStore = create<GameState>((set, get) => ({
         position: dest,
       };
       state.spawnPiece(clone);
-      const validMoves = getAllAvailableMoves(piece, get().game);
-      if (validMoves.length > 0) {
-        return;
-      }
+      return;
     } else {
       // Simple classical move
       state.moveToGrid(piece, dest);
@@ -249,30 +253,32 @@ const useGameStore = create<GameState>((set, get) => ({
 
     // Fire AI move if it's now AI's turn
     if (get().currentPlayer !== get().playerColor) {
-      console.log("AI turn");
       setTimeout(get().handleAiMove, Math.floor(Math.random() * 300));
     }
   },
 
   /* --------------------------- Chess‑engine AI ---------------------------- */
   handleAiMove: () => {
-    console.log("AI is thinking...");
     const move = get().game.aiMove(1);
     const [[from, to]] = Object.entries<string>(move);
     set({
       lastMove: { from, to },
       playerQuantumEnergy: get().playerQuantumEnergy + 25,
     });
+    // get().game.move(from, to);
     const startPiece = get().boardState.get(getCoord(from as Grid));
     if (!startPiece) return;
 
     setTimeout(() => {
-      console.log("AI move piece:", startPiece);
       const destCoord = getCoord(to as Grid)
         .split("-")
         .map(Number);
       get().movePiece(startPiece, { x: destCoord[0], y: destCoord[1] });
-    }, Math.floor(Math.random() * 300) + 500);
+      if (get().game.board.configuration.check) {
+        playCheck();
+        set({ message: "Check, your king is in danger!" });
+      }
+    }, Math.floor(Math.random() * 500) + 500);
   },
 
   /* -------------------------- Simple board move -------------------------- */
@@ -347,7 +353,6 @@ const useGameStore = create<GameState>((set, get) => ({
     rec.cloneId = clone.id;
     rec.clonePos = clone.position;
     sup.set(baseId(clone.id), rec);
-    console.log("Current game state:", get().game);
     set({
       boardState: board,
       superPositions: sup,
@@ -501,7 +506,6 @@ const useGameStore = create<GameState>((set, get) => ({
 
     get().tickSuperPositions();
     if (get().currentPlayer !== get().playerColor) {
-      console.log("AI turn");
       setTimeout(get().handleAiMove, Math.floor(Math.random() * 300));
     }
   },

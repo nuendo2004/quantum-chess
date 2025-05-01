@@ -68,8 +68,12 @@ const GamePlay: React.FC<GamePlayProp> = ({ setShowKnowledge }) => {
           <PlayerIcon className="h-7 w-7 flex-shrink-0" />
           <span>Current Turn:</span>
         </div>
-        <div className="font-medium text-gray-800 dark:text-gray-100 self-center">
-          {currentPlayer === "white" ? "Player" : "AI"} ({currentPlayer})
+        <div
+          className={`font-medium self-center mb-3 ${
+            currentPlayer === playerColor ? "text-green-500" : "text-red-600"
+          }`}
+        >
+          {currentPlayer === playerColor ? "Player" : "AI"} ({currentPlayer})
         </div>
       </div>
 
@@ -86,7 +90,6 @@ const GamePlay: React.FC<GamePlayProp> = ({ setShowKnowledge }) => {
         </span>
       </div>
 
-      {/* Energy Bar */}
       <div className="mt-4">
         <div className="flex justify-between mb-1">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -133,7 +136,6 @@ const GamePlay: React.FC<GamePlayProp> = ({ setShowKnowledge }) => {
           </button>
         </div>
         <button
-          disabled={playerQuantumEnergy < MAX_QUANTUM_ENERGY}
           onClick={() => {
             setWinner(playerColor === "white" ? "black" : "white");
           }}

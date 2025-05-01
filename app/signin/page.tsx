@@ -11,7 +11,7 @@ const SignIn = () => {
   const router = useRouter();
 
   const handleGoogleSignUp = async () => {
-    await signIn("google", { callbackUrl: "/home" });
+    await signIn("google", { callbackUrl: "/" });
   };
 
   const handleLogin = async (e: React.FormEvent) => {

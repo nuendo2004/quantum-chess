@@ -49,7 +49,6 @@ const QuantumPiece: React.FC<{ piece: Piece; model: unknown }> = ({
       onClick={(e) => {
         e.stopPropagation();
         handlePieceClick(piece);
-        console.log("clicked piece group....");
       }}
     >
       {/* @ts-expect-error Allow unknown model type for primitive */}

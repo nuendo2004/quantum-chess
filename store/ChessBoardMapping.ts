@@ -1,4 +1,4 @@
-import { Piece, Position } from "./gamesStore";
+import { Position } from "./gamesStore";
 
 const gridToCoord = {
   A1: "7-0",
