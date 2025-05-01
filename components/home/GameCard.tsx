@@ -14,6 +14,15 @@ export default function GameCard({
   bgColor: string;
 }) {
   const router = useRouter();
+
+  const handleNavigation = () => {
+    if (title === "Quantum Chess") {
+      router.replace("/quantumChess");
+    } else if (title === "Particle Puzzle") {
+      router.replace("/quantumMaze");
+    }
+  };
+
   return (
     <motion.div
       className={`${bgColor} p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow dark:bg-opacity-50`}
@@ -26,10 +35,11 @@ export default function GameCard({
       <p className="text-gray-600 dark:text-gray-400">{description}</p>
       <button
         className="mt-6 bg-purple-600 text-white px-6 py-2 rounded-full"
-        onClick={() => router.replace("/quantumChess")}
+        onClick={handleNavigation}
       >
         Play Now
       </button>
     </motion.div>
   );
 }
+  
