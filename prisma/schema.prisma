@@ -69,27 +69,30 @@ model VerificationToken {
 }
 
 model GameProfile {
-  id            String @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String @unique @map("user_id") @db.ObjectId 
-  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                     String   @unique @map("user_id") @db.ObjectId
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  quantumChessWins      Int     @default(0)
-  puzzlesSolved         Int     @default(0)
-  achievementsUnlocked  Int     @default(0) 
-  currentRank           String  @default("Quantum Novice")
-  xp                    Int     @default(0)
+  quantumChessWins           Int      @default(0)
+  puzzlesSolved              Int      @default(0)
+  achievementsUnlocked       Int      @default(0)
+  currentRank                String   @default("Quantum Novice")
+  xp                         Int      @default(0)
 
-  quantumChessSkillsProgress Int @default(0)
-  puzzleSolvingProgress      Int @default(0)
-  learningProgress           Int @default(0)
+  quantumChessSkillsProgress Int      @default(0)
+  puzzleSolvingProgress      Int      @default(0)
+  learningProgress           Int      @default(0)
 
-  quantumChessTotalGames   Int     @default(0) 
-  quantumChessCurrentStreak Int    @default(0) 
-  puzzleAverageTimeSeconds Int?   
-  puzzlePerfectSolutions   Int     @default(0) 
+  quantumChessTotalGames     Int      @default(0)
+  quantumChessCurrentStreak  Int      @default(0)
+  puzzleAverageTimeSeconds   Int?
+  puzzlePerfectSolutions     Int      @default(0)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  inGameToken                Int      @default(0)
+
+  lastLoggedIn               DateTime? @map("last_logged_in")
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
   @@map("game_profiles")
 }

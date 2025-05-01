@@ -1,5 +1,5 @@
 import React from "react";
-import { initialProfileData } from "./page";
+import { initialProfileData } from "./initialProfileData";
 import ProgressBar from "@/components/ProgressBar";
 import { GameProfile } from "@prisma/client";
 

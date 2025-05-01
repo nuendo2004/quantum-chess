@@ -1,32 +1,26 @@
 "use client";
 import { Piece } from "./gamesStore";
 
-const InitialPieces: Piece[] = [
+const initialPieces: Piece[] = [
   // White pieces
 
   {
     id: "wR1",
     type: "Rook_w",
     color: "white",
-    positions: [{ x: 0, y: 0 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 0, y: 0 },
   },
   {
     id: "wR2",
     type: "Rook_w",
     color: "white",
-    positions: [{ x: 7, y: 0 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 7, y: 0 },
   },
   {
     id: "wN1",
     type: "Knight_w",
     color: "white",
-    positions: [{ x: 1, y: 0 }],
-    isSuperposed: false,
-    quantumMovesLeft: 2,
+    position: { x: 1, y: 0 },
     offside: {
       x: 0,
       y: 0.225,
@@ -37,81 +31,70 @@ const InitialPieces: Piece[] = [
     id: "wB1",
     type: "Bishop_w",
     color: "white",
-    positions: [{ x: 2, y: 0 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 2, y: 0 },
   },
   {
     id: "wQ",
     type: "queen_w",
     color: "white",
-    positions: [{ x: 3, y: 0 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 4, y: 0 },
   },
   {
     id: "wK",
     type: "King_w",
     color: "white",
-    positions: [{ x: 4, y: 0 }],
-    isSuperposed: false,
-    quantumMovesLeft: 0,
+    position: { x: 3, y: 0 },
   },
   {
     id: "wB2",
     type: "Bishop_w",
     color: "white",
-    positions: [{ x: 5, y: 0 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 5, y: 0 },
   },
   {
     id: "wN2",
     type: "Knight_w",
     color: "white",
-    positions: [{ x: 6, y: 0 }],
-    isSuperposed: false,
-    quantumMovesLeft: 2,
+    position: { x: 6, y: 0 },
     offside: {
       x: 0,
       y: 0.225,
       z: 0,
     },
   },
+  //@ts-expect-error color is const
   ...Array.from({ length: 8 }, (_, i) => ({
     id: `wP${i + 1}`,
     type: "Pawn_w",
     color: "white",
-    positions: [{ x: i, y: 1 }],
-    isSuperposed: false,
-    tunnelingUsed: false,
-    quantumMovesLeft: 1,
+    position: { x: i, y: 1 },
+    offside: {
+      x: 0,
+      y: 0,
+      z: 0,
+    },
   })),
 
-  // black
   {
     id: "bR1",
     type: "Rook_b",
+    //@ts-expect-error color is const
     color: "black",
-    positions: [{ x: 0, y: 7 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 0, y: 7 },
   },
   {
     id: "bR2",
     type: "Rook_b",
+    //@ts-expect-error color is const
     color: "black",
-    positions: [{ x: 7, y: 7 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 7, y: 7 },
   },
   {
     id: "bN1",
     type: "Knight_b",
+    //@ts-expect-error color is const
     color: "black",
-    positions: [{ x: 6, y: 7 }],
-    isSuperposed: false,
-    quantumMovesLeft: 2,
+    position: { x: 6, y: 7 },
     offside: {
       x: 0,
       y: 0.225,
@@ -121,56 +104,56 @@ const InitialPieces: Piece[] = [
   {
     id: "bB1",
     type: "Bishop_b",
+    //@ts-expect-error color is const
     color: "black",
-    positions: [{ x: 5, y: 7 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 5, y: 7 },
   },
   {
     id: "bQ",
     type: "queen_b",
+    //@ts-expect-error color is const
     color: "black",
-    positions: [{ x: 3, y: 7 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 4, y: 7 },
   },
   {
     id: "bK",
     type: "King_b",
+    //@ts-expect-error color is const
     color: "black",
-    positions: [{ x: 4, y: 7 }],
-    isSuperposed: false,
-    quantumMovesLeft: 0,
+    position: { x: 3, y: 7 },
   },
   {
     id: "bB2",
     type: "Bishop_b",
+    //@ts-expect-error color is const
     color: "black",
-    positions: [{ x: 2, y: 7 }],
-    isSuperposed: false,
-    quantumMovesLeft: 1,
+    position: { x: 2, y: 7 },
   },
   {
     id: "bN2",
     type: "Knight_b",
+    //@ts-expect-error color is const
     color: "black",
-    positions: [{ x: 1, y: 7 }],
-    isSuperposed: false,
-    quantumMovesLeft: 2,
+    position: { x: 1, y: 7 },
     offside: {
       x: 0,
       y: 0.225,
       z: 0,
     },
   },
+  //@ts-expect-error color is const
   ...Array.from({ length: 8 }, (_, i) => ({
     id: `bP${i + 1}`,
     type: "Pawn_b",
     color: "black",
-    positions: [{ x: i, y: 6 }],
-    isSuperposed: false,
-    tunnelingUsed: false,
-    quantumMovesLeft: 1,
+    position: { x: i, y: 6 },
   })),
 ];
-export default InitialPieces;
+
+const InitialBoardState = new Map();
+
+for (const ps of initialPieces) {
+  InitialBoardState.set(`${ps.position.x}-${ps.position.y}`, ps);
+}
+
+export default InitialBoardState;

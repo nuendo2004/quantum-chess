@@ -1,57 +1,37 @@
-import dbConnect from "@/libs/dbConnect";
-import User from "@/model/User";
+import { prisma } from "../auth/[...nextauth]/authOption";
 import bcrypt from "bcryptjs";
+import { NextResponse } from "next/server";
 
-export async function POST(request: Request) {
-  try {
-    const {
-      name,
-      email,
-      password,
-      emailVerified,
-      image,
-      accounts,
-      sessions,
-      dateCreated,
-    } = await request.json();
+export async function POST(req: Request) {
+  const { name, email, password } = await req.json();
 
-    if (!email || !password) {
-      return new Response(JSON.stringify({ message: "Missing fields" }), {
-        status: 400,
-      });
-    }
-
-    await dbConnect();
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return new Response(JSON.stringify({ message: "User already exists" }), {
-        status: 400,
-      });
-    }
-
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      name,
-      emailVerified,
-      image,
-      accounts,
-      sessions,
-      dateCreated,
-    });
-    await newUser.save();
-
-    return new Response(
-      JSON.stringify({ message: "User created successfully" }),
-      { status: 201 }
+  if (!email || !password || !name) {
+    return NextResponse.json(
+      { ok: false, message: "Missing fields" },
+      { status: 400 }
     );
-  } catch (error) {
-    console.error(error);
-    return new Response(JSON.stringify({ message: "Server error" }), {
-      status: 500,
-    });
   }
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    return NextResponse.json(
+      { ok: false, message: "Email already in use" },
+      { status: 400 }
+    );
+  }
+
+  const hashed = await bcrypt.hash(password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      email,
+      name,
+      password: hashed,
+      dateCreated: new Date().toISOString(),
+    },
+  });
+
+  await prisma.gameProfile.create({ data: { userId: user.id } });
+
+  return NextResponse.json({ ok: true }, { status: 201 });
 }

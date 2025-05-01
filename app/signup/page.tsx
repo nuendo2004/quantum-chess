@@ -1,8 +1,6 @@
 "use client";
 
 import GoogleSVG from "@/svg/GoogleSVG";
-import { User } from "@prisma/client";
-import { randomUUID } from "crypto";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -17,28 +15,18 @@ const SignUp = () => {
   const router = useRouter();
 
   const handleSignup = async () => {
-    const uploadUser: User = {
-      id: randomUUID(),
-      name,
-      email,
-      password,
-      emailVerified: null,
-      image,
-      dateCreated: new Date().toUTCString(),
-    };
-    if (image) {
-      uploadUser.image = image;
-      uploadUser.dateCreated = new Date().toUTCString();
-    }
+    const payload = { name, email, password, image };
 
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(uploadUser),
+      body: JSON.stringify(payload),
     });
+
     const data = await res.json();
+
     if (res.ok) {
-      router.push("/signin"); // Redirect to sign in page after successful signup
+      router.push("/signin");
     } else {
       setMessage(data.message);
     }

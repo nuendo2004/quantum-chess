@@ -1,15 +1,18 @@
 import useGameStore from "@/store/gamesStore";
 import QuantumPiece from "./QuantumPiece";
+import { useMemo } from "react";
 
-const PiecesGroup = ({ nodes }: { nodes: any }) => {
-  const pieces = useGameStore((state) => state.pieces);
-  return (
-    <group>
-      {pieces.map((piece) => (
-        <QuantumPiece key={piece.id} piece={piece} model={nodes[piece.type]} />
-      ))}
-    </group>
-  );
+const PiecesGroup = ({ nodes }: { nodes: unknown }) => {
+  const pieces = useGameStore((state) => state.boardState);
+
+  const chessGroup = useMemo(() => {
+    return Array.from(pieces).map(([id, piece]) => (
+      //@ts-expect-error allow
+      <QuantumPiece key={id} piece={piece} model={nodes[piece.type]} />
+    ));
+  }, [nodes, pieces]);
+
+  return <group>{chessGroup}</group>;
 };
 
 export default PiecesGroup;

@@ -1,29 +1,19 @@
 "use client";
-import useGameStore from "@/store/gamesStore";
-import React, { useEffect, useMemo, useState } from "react";
+import { getCoord, Grid } from "@/store/ChessBoardMapping";
+import useGameStore, { Position } from "@/store/gamesStore";
+import React, { useCallback, useMemo } from "react";
 
 const ChessBoard = () => {
   const {
     boardState,
-    pieces,
-    setInitialBoardState,
     selectedPiece,
     currentPlayer,
     validMoves,
-    makeMove,
+    movePiece,
+    lastMove,
   } = useGameStore((state) => state);
 
-  useEffect(() => {
-    const newMap = new Map(boardState);
-    console.log(pieces);
-    pieces.map((ps) => {
-      newMap.set(`${ps.positions[0].x}-${ps.positions[0].y}`, ps);
-    });
-    setInitialBoardState(newMap);
-  }, [pieces, setInitialBoardState, selectedPiece]);
-
   const renderMoveIndicator = useMemo(() => {
-    console.log(selectedPiece, currentPlayer[0]);
     if (!selectedPiece || selectedPiece.color[0] !== currentPlayer[0]) return;
     const moveMap = [];
     for (const mv of validMoves) {
@@ -61,33 +51,52 @@ const ChessBoard = () => {
     });
   }, [selectedPiece, currentPlayer, boardState, validMoves]);
 
+  const getPieceColor = useCallback(
+    (position: Position) => {
+      if (getCoord(lastMove?.from as Grid) === `${position.x}-${position.y}`) {
+        return "blue";
+      } else if (
+        getCoord(lastMove?.to as Grid) === `${position.x}-${position.y}`
+      ) {
+        return "red";
+      } else return (position.x + position.y) % 2 ? "white" : "gray";
+    },
+    [lastMove]
+  );
+
   const renderBoard = useMemo(() => {
-    return Array(8)
-      .fill()
-      .map((_, i) =>
-        Array(8)
-          .fill()
-          .map((_, j) => (
-            <React.Fragment key={`${i}-${j}`}>
-              {/* Chessboard Square */}
-              <mesh
-                position={[i, 0, j]}
-                onClick={() => makeMove({ x: i, y: j }, validMoves)}
-              >
-                <boxGeometry args={[1, 0.1, 1]} />
-                {selectedPiece?.positions[0].x === i &&
-                selectedPiece?.positions[0].y === j ? (
-                  <meshStandardMaterial color="gold" />
-                ) : (
-                  <meshStandardMaterial
-                    color={(i + j) % 2 ? "white" : "gray"}
-                  />
-                )}
-              </mesh>
-            </React.Fragment>
-          ))
-      );
-  }, [selectedPiece, makeMove, validMoves]);
+    return (
+      Array(8)
+        // @ts-expect-error any
+        .fill()
+        .map((_, i) =>
+          Array(8)
+            // @ts-expect-error any
+            .fill()
+            .map((_, j) => {
+              const squareKey = `${i}-${j}`;
+              return (
+                <React.Fragment key={squareKey}>
+                  <mesh
+                    position={[i, 0, j]}
+                    onClick={() => movePiece(selectedPiece, { x: i, y: j })}
+                  >
+                    <boxGeometry args={[1, 0.1, 1]} />
+                    {selectedPiece?.position.x === i &&
+                    selectedPiece?.position.y === j ? (
+                      <meshStandardMaterial color="gold" />
+                    ) : (
+                      <meshStandardMaterial
+                        color={getPieceColor({ x: i, y: j })}
+                      />
+                    )}
+                  </mesh>
+                </React.Fragment>
+              );
+            })
+        )
+    );
+  }, [selectedPiece, getPieceColor, movePiece]);
 
   return (
     <group position={[-3.5, 0, -3.5]}>

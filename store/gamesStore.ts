@@ -1,431 +1,618 @@
-import { create } from "zustand";
-import InitialPieces from "./initialPiecesState";
-import { getAllAvailableMoves } from "./tranditionalRule";
+"use client";
 
-// --- Types ---
+import { create } from "zustand";
+// @ts-expect-error no type for chess engine
+import { Game } from "js-chess-engine";
+import InitialBoardState from "./initialPiecesState";
+import {
+  getGrid,
+  getCoord,
+  getCoordId,
+  Coord,
+  Grid,
+} from "./ChessBoardMapping";
+import {
+  AiPieceCode,
+  aiPieceMap,
+  getAllAvailableMoves,
+  playCaptureSound,
+  playMoveSound,
+} from "./tranditionalRule";
+
 export type Position = { x: number; y: number };
 
-export type Piece = {
+export interface Piece {
   id: string;
   type: string;
-  color: string;
-  positions: Position[];
-  isSuperposed: boolean;
-  entangledWith?: string;
-  tunnelingUsed?: boolean;
-  quantumMovesLeft: number;
-  offside?: {
-    x: number;
-    y: number;
-    z: number;
-  };
-};
-
-export type QuantumState = {
-  activeMoveType: "superposition" | "entanglement" | "tunneling" | null;
-  quantumTokens: { white: number; black: number };
-};
-
-interface GameState {
-  pieces: Piece[];
-  boardState: Map<string, Piece>;
-  currentPlayer: "white" | "black";
-  quantumState: QuantumState;
-  selectedPiece: Piece | null;
-  validMoves: Position[];
-  moves: { pieceId: string; positions: Position }[];
-  setSuperposition: (pieceId: string, positions: Position[]) => void;
-  entanglePieces: (piece1Id: string, piece2Id: string) => void;
-  getPieceAtPosition: (x: number, y: number) => Piece[];
-  movePiece: (piece: Piece, newPosition: Position) => void;
-  collapseSuperposition: (pieceId: string, triggerPosition: Position) => void;
-  setQuantumMoveType: (moveType: QuantumState["activeMoveType"]) => void;
-  isValidMove: (piece: Piece, target: Position) => boolean;
-  handlePieceClick: (piece: Piece) => void;
-  setInitialBoardState: (board: Map<string, string>) => void;
-  makeMove: (pos: Position, newPosition: Position[]) => void;
+  color: "white" | "black";
+  position: Position;
+  offside?: { x: number; y: number; z: number };
 }
 
-// --- Initial Setup ---
-const initialPieces: Piece[] = InitialPieces;
+interface SuperPositionRecord {
+  originalId: string;
+  originalPos: Position;
+  cloneId: string | null;
+  clonePos: Position | null;
+  captured: Piece[];
+  timeLeft: number;
+}
+interface EntanglementRecord {
+  allyId: string;
+  allyPos: Position;
+  enemyId: string;
+  enemyPos: Position;
+  turnsLeft: number;
+}
 
-// --- Helper Functions ---
-const distance = (a: Position, b: Position) =>
-  Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+type SuperPositions = Map<string, SuperPositionRecord>;
+type Entanglements = Map<string, EntanglementRecord>;
 
-// const getClassicalMoves = (piece: Piece): Position[] => {
-//   const currentPos = piece.positions[0];
-//   const moves: Position[] = [];
+interface GameState {
+  gameOver: number;
+  boardState: Map<string, Piece>;
+  currentPlayer: "white" | "black";
+  playerColor: "white" | "black";
+  selectedPiece: Piece | null;
+  validMoves: Position[];
+  game: Game;
+  gameScore: number;
+  lastMove: { from: string; to: string } | null;
+  message: string | null;
+  superPositions: SuperPositions;
+  entanglements: Entanglements;
+  onSelectEntangle: boolean;
+  playerQuantumEnergy: number;
+  playerXP: number;
+  winner: null | string;
 
-//   switch (piece.type) {
-//     case "pawn": {
-//       const direction = piece.color === "white" ? 1 : -1;
-//       // Standard pawn move
-//       moves.push({ x: currentPos.x, y: currentPos.y + direction });
-//       if (!piece.tunnelingUsed) {
-//         moves.push({ x: currentPos.x, y: currentPos.y + 2 * direction });
-//       }
-//       break;
-//     }
-//     case "knight": {
-//       // L-shaped moves for knight
-//       [-2, -1, 1, 2].forEach((dx) =>
-//         [-2, -1, 1, 2].forEach((dy) => {
-//           if (Math.abs(dx) !== Math.abs(dy)) {
-//             moves.push({ x: currentPos.x + dx, y: currentPos.y + dy });
-//           }
-//         })
-//       );
-//       break;
-//     }
-//     // Add other piece types as needed
-//   }
-//   return moves.filter(
-//     (pos) => pos.x >= 0 && pos.x < 8 && pos.y >= 0 && pos.y < 8
-//   );
-// };
+  handlePieceClick: (piece: Piece) => void;
+  movePiece: (piece: Piece | null, dest: Position) => void;
+  capturePiece: (taker: Piece, loser: Piece) => void;
+  moveToGrid: (piece: Piece, dest: Position) => void;
+  spawnPiece: (clone: Piece) => void;
+  handleAiMove: () => void;
+  initializeSuperposition: (piece: Piece) => void;
+  collapsePiece: (piece: Piece) => void;
+  tickSuperPositions: () => void;
+  initializeEntanglement: (ally: Piece) => void;
+  setGameOver: (n: number) => void;
+  setWinner: (winner: string) => void;
+  restartGame: () => void;
+}
 
-// --- Zustand Store ---
-const useGameStore = create<GameState>((set, get) => ({
-  pieces: initialPieces,
-  currentPlayer: "white",
-  boardState: new Map(),
-  moves: [],
-  quantumState: {
-    activeMoveType: null,
-    quantumTokens: { white: 3, black: 3 },
-  },
+// ---------------------------------------------------------------------------
+// Helper utilities
+// ---------------------------------------------------------------------------
+const baseId = (id: string) => id.replace(/-copy$/, "");
+const isClone = (id: string) => id.endsWith("-copy");
+
+const findCoordById = (
+  board: Map<string, Piece>,
+  pid: string
+): [string, Piece] | null => {
+  for (const [coord, pc] of board) if (pc.id === pid) return [coord, pc];
+  return null;
+};
+
+const entKey = (id1: string, id2: string) => [id1, id2].sort().join("|");
+// ---------------------------------------------------------------------------
+// Main Zustand store
+// ---------------------------------------------------------------------------
+
+const initialState = {
+  gameOver: -1, // -1: starting, 0: playing, 1: ending
+  boardState: InitialBoardState,
   selectedPiece: null,
-
-  setInitialBoardState: (newState: Map<string, Piece>) => {
-    set({ boardState: newState });
+  validMoves: [],
+  game: new Game(),
+  gameScore: 0,
+  lastMove: null,
+  message: null,
+  superPositions: new Map(),
+  entanglements: new Map(),
+  onSelectEntangle: false,
+  playerQuantumEnergy: 100,
+  playerXP: 0,
+  winner: null,
+};
+const useGameStore = create<GameState>((set, get) => ({
+  ...initialState,
+  currentPlayer: "white",
+  playerColor: "white",
+  setGameOver: (state: number) => {
+    set({ gameOver: state });
   },
 
-  setSuperposition: (pieceId, positions) => {
-    const state = get();
-    const piece = state.pieces.find((p) => p.id === pieceId);
-    if (!piece || piece.quantumMovesLeft <= 0) return;
-
+  setWinner: (winner: string) => {
     set({
-      pieces: state.pieces.map((p) =>
-        p.id === pieceId
-          ? {
-              ...p,
-              positions,
-              isSuperposed: true,
-              quantumMovesLeft: p.quantumMovesLeft - 1,
-            }
-          : p
-      ),
-      quantumState: {
-        ...state.quantumState,
-        quantumTokens: {
-          ...state.quantumState.quantumTokens,
-          [piece.color]: state.quantumState.quantumTokens[piece.color] - 1,
-        },
-      },
+      winner,
+      gameOver: 1,
     });
   },
 
-  entanglePieces: (piece1Id, piece2Id) => {
+  restartGame: () => {
+    set({ ...initialState, currentPlayer: "white", playerColor: "white" });
+  },
+
+  /* ------------------------------ UI actions ------------------------------ */
+  handlePieceClick: (piece) => {
+    // handle entanglement selection
     const state = get();
-    const piece1 = state.pieces.find((p) => p.id === piece1Id);
-    const piece2 = state.pieces.find((p) => p.id === piece2Id);
+    if (
+      get().onSelectEntangle &&
+      piece.color !== get().currentPlayer &&
+      state.selectedPiece
+    ) {
+      if (
+        state.superPositions.has(state.selectedPiece!.id) ||
+        state.superPositions.has(piece.id)
+      ) {
+        set({
+          message: "⛔ Cannot entangle pieces currently in super‑position.",
+        });
+        return;
+      }
+      const ent = new Map(state.entanglements);
+      const key = entKey(state.selectedPiece.id, piece.id);
+      if (ent.has(key)) return;
+      ent.set(key, {
+        allyId: state.selectedPiece.id,
+        allyPos: state.selectedPiece.position,
+        enemyId: piece.id,
+        enemyPos: piece.position,
+        turnsLeft: 3,
+      });
+      set({
+        entanglements: ent,
+        onSelectEntangle: false,
+        message: `🔗 '${state.selectedPiece.id}' entangled with '${piece.id}' for 3 turns.`,
+      });
+      return;
+    }
 
-    if (!piece1 || !piece2 || piece1.color !== piece2.color) return;
+    // Ignore clicks during opponent's turn
+    if (get().currentPlayer !== get().playerColor) return;
+    // Update valid moves
+    const currentValidMoves = getAllAvailableMoves(piece, get().game);
+    const prev = get().selectedPiece;
+    if (!prev || piece.color === get().currentPlayer) {
+      set({ selectedPiece: piece, validMoves: currentValidMoves });
+      return;
+    }
+    // capture piece
+    if (piece.color !== get().playerColor) {
+      get().movePiece(prev, piece.position);
+    }
+  },
 
+  /* ----------------------------------------------------------------------- */
+  /*                             Game Mechanics                              */
+  /* ----------------------------------------------------------------------- */
+  movePiece: (piece, dest) => {
+    console.log("Moving piece: ", get().game.board.configuration.turn);
+    if (!piece) return;
+    const state = get();
+
+    const target = state.boardState.get(getCoordId(dest));
+
+    if (state.currentPlayer === state.playerColor) {
+      const validMoves = getAllAvailableMoves(piece, get().game);
+      if (state.currentPlayer !== piece.color) return;
+      if (
+        !validMoves.some((mv: Position) => mv.x === dest.x && mv.y === dest.y)
+      )
+        return;
+    }
+    playMoveSound();
+    // Handle capture
+    if (target) {
+      state.capturePiece(piece, target);
+      return;
+    }
+
+    // If piece is in super‑position and hasn't split yet => spawn clone
+    if (
+      !isClone(piece.id) &&
+      state.superPositions.has(piece.id) &&
+      !state.superPositions.get(piece.id)!.cloneId
+    ) {
+      const clone: Piece = {
+        ...piece,
+        id: `${piece.id}-copy`,
+        position: dest,
+      };
+      state.spawnPiece(clone);
+      const validMoves = getAllAvailableMoves(piece, get().game);
+      if (validMoves.length > 0) {
+        return;
+      }
+    } else {
+      // Simple classical move
+      state.moveToGrid(piece, dest);
+      // Update chess engine
+      if (piece.color === state.playerColor) {
+        state.game.move(
+          getGrid(getCoordId(piece.position)),
+          getGrid(getCoordId(dest))
+        );
+        set({ playerXP: get().playerXP + 10 });
+      }
+    }
+
+    // Flip turn & process quantum timers
+    set({ currentPlayer: state.currentPlayer === "white" ? "black" : "white" });
+    get().tickSuperPositions();
+
+    // Fire AI move if it's now AI's turn
+    if (get().currentPlayer !== get().playerColor) {
+      console.log("AI turn");
+      setTimeout(get().handleAiMove, Math.floor(Math.random() * 300));
+    }
+  },
+
+  /* --------------------------- Chess‑engine AI ---------------------------- */
+  handleAiMove: () => {
+    console.log("AI is thinking...");
+    const move = get().game.aiMove(1);
+    const [[from, to]] = Object.entries<string>(move);
     set({
-      pieces: state.pieces.map((p) => {
-        if (p.id === piece1Id) return { ...p, entangledWith: piece2Id };
-        if (p.id === piece2Id) return { ...p, entangledWith: piece1Id };
-        return p;
-      }),
+      lastMove: { from, to },
+      playerQuantumEnergy: get().playerQuantumEnergy + 25,
+    });
+    const startPiece = get().boardState.get(getCoord(from as Grid));
+    if (!startPiece) return;
+
+    setTimeout(() => {
+      console.log("AI move piece:", startPiece);
+      const destCoord = getCoord(to as Grid)
+        .split("-")
+        .map(Number);
+      get().movePiece(startPiece, { x: destCoord[0], y: destCoord[1] });
+    }, Math.floor(Math.random() * 300) + 500);
+  },
+
+  /* -------------------------- Simple board move -------------------------- */
+  moveToGrid: (piece, dest) => {
+    const board = new Map(get().boardState);
+    const validMoves = getAllAvailableMoves(piece, get().game);
+    if (
+      !validMoves.some((mv: Position) => mv.x === dest.x && mv.y === dest.y) &&
+      get().currentPlayer === get().playerColor
+    )
+      return;
+    // Remove from old square & add to new
+    board.delete(getCoordId(piece.position));
+    board.set(getCoordId(dest), { ...piece, position: dest });
+
+    // Update quantum record if necessary
+    const sup = new Map(get().superPositions);
+    const rec = sup.get(baseId(piece.id));
+    if (rec) {
+      if (isClone(piece.id)) rec.clonePos = dest;
+      else rec.originalPos = dest;
+      sup.set(baseId(piece.id), rec);
+    }
+
+    set({ boardState: board, superPositions: sup, selectedPiece: null });
+  },
+
+  /* ------------------------ Super‑position utilities --------------------- */
+  initializeSuperposition: (piece) => {
+    const sup = new Map(get().superPositions);
+    if (sup.has(piece.id)) return; // already quantum
+    for (const er of get().entanglements.values()) {
+      if (er.allyId === piece.id || er.enemyId === piece.id) {
+        set({
+          message: `⛔ Cannot put '${piece.id}' in super‑position while entangled.`,
+        });
+        return;
+      }
+    }
+
+    sup.set(piece.id, {
+      originalId: piece.id,
+      originalPos: piece.position,
+      cloneId: null,
+      clonePos: null,
+      captured: [],
+      timeLeft: 10,
+    });
+    set({
+      superPositions: sup,
+      message: `Piece '${piece.id}' entered super‑position!`,
+      playerQuantumEnergy: get().playerQuantumEnergy - 100,
     });
   },
 
-  getPieceAtPosition: (x, y) => {
-    return get().pieces.filter((p) =>
-      p.positions.some((pos) => pos.x === x && pos.y === y)
+  spawnPiece: (clone) => {
+    const sup = new Map(get().superPositions);
+    const rec = sup.get(baseId(clone.id));
+    if (!rec) return;
+
+    /* Place clone on board */
+    const board = new Map(get().boardState);
+    board.set(getCoordId(clone.position), clone);
+
+    /* Update chess engine */
+    get().game.setPiece(
+      getGrid(getCoordId(clone.position)),
+      aiPieceMap[clone.id.substring(0, 2) as AiPieceCode]
     );
+
+    rec.cloneId = clone.id;
+    rec.clonePos = clone.position;
+    sup.set(baseId(clone.id), rec);
+    console.log("Current game state:", get().game);
+    set({
+      boardState: board,
+      superPositions: sup,
+      message: `🌀 Clone of '${baseId(clone.id)}' spawned.`,
+    });
   },
 
-  movePiece: (piece, newPosition) => {
-    set((state) => {
-      const targetId = `${newPosition.x}-${newPosition.y}`;
-      const movingPieceId = piece.id; // Store the ID of the piece being moved
+  /* ----------------------------- Capture logic --------------------------- */
+  capturePiece: (taker, loser) => {
+    const board = new Map(get().boardState);
+    const sup = new Map(get().superPositions);
+    const game = get().game;
+    const ent = new Map(get().entanglements);
+    // ---- Quantum capture ----
+    if (sup.has(baseId(loser.id))) {
+      const rec = sup.get(baseId(loser.id))!;
+      const rootId = baseId(loser.id);
 
-      // Get the current board state and the target piece (if any)
-      const currentBoardState = get().boardState;
-      const targetPiece = currentBoardState.get(targetId); // Piece at the destination
+      // Remove the captured branch (always dies)
+      const gone = findCoordById(board, loser.id);
+      if (gone) {
+        board.delete(gone[0]);
+        game.removePiece(getGrid(gone[0] as Coord));
+      }
 
-      // Create the updated representation of the moving piece
-      const updatedMovingPiece: Piece = { ...piece, positions: [newPosition] };
+      // Move taker to that square
+      board.delete(getCoordId(taker.position));
+      const moved: Piece = { ...taker, position: loser.position };
+      board.set(getCoordId(moved.position), moved);
 
-      let finalPiecesArray: Piece[];
-      const newBoardState = new Map(currentBoardState); // Create a mutable copy of the board state
+      // Update taker's quantum record if any
+      const takerRec = sup.get(baseId(taker.id));
+      if (takerRec) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        isClone(taker.id)
+          ? (takerRec.clonePos = moved.position)
+          : (takerRec.originalPos = moved.position);
+        sup.set(baseId(taker.id), takerRec);
+      }
 
-      // --- Update boardState: Clear the piece's old position ---
-      // Assume piece.positions[0] holds the current/old position before the move
-      if (piece.positions && piece.positions.length > 0) {
-        const oldPosition = piece.positions[0];
-        const oldPositionId = `${oldPosition.x}-${oldPosition.y}`;
-        // Verify the piece being moved was actually at the old position before deleting
-        if (newBoardState.get(oldPositionId)?.id === movingPieceId) {
-          newBoardState.delete(oldPositionId);
+      // Optional 50‑50 chance the other branch also dies
+      const otherId = [rec.originalId, rec.cloneId].filter(
+        (id) => id !== loser.id
+      )[0];
+      let bothGone = false;
+      if (otherId && Math.random() < 0.5) {
+        const other = findCoordById(board, otherId);
+        if (other) {
+          board.delete(other[0]);
+          game.removePiece(getGrid(other[0] as Coord));
+          bothGone = true;
         }
-      } else {
-        console.warn(
-          "Moving piece lacks position info to clear its old square",
-          piece
-        );
-        // Might need alternative logic if position isn't stored this way
       }
 
-      // --- Check for Capture ---
-      if (targetPiece && targetPiece.color !== get().currentPlayer) {
-        // --- Capture Logic ---
+      // Clean record & message
+      sup.delete(rootId);
+      const captureMsg = bothGone
+        ? `☠️ Both branches of '${rootId}' were destroyed during capture!`
+        : `⚖️ Quantum capture resolved – '${rootId}' collapsed to a single branch.`;
 
-        // 1. Update boardState: Place moving piece on target square (overwrites target)
-        newBoardState.set(targetId, updatedMovingPiece);
-
-        // 2. Update pieces array:
-        //    a. Filter out the captured piece (targetPiece)
-        //    b. Map over the remaining pieces to update the moving piece's position
-        finalPiecesArray = state.pieces
-          .filter((p) => p.id !== targetPiece.id) // Remove captured piece
-          .map((p) => (p.id === movingPieceId ? updatedMovingPiece : p)); // Update moving piece
-      } else if (targetPiece && targetPiece.color === get().currentPlayer) {
-        // --- Invalid Move: Trying to move onto own piece ---
-        console.error("Invalid move: Cannot capture own piece.");
-        // Return the original state without changes (or handle as an error)
-        return state;
-      } else {
-        // --- Simple Move Logic (No Capture) ---
-
-        // 1. Update boardState: Place moving piece on the empty target square
-        newBoardState.set(targetId, updatedMovingPiece);
-
-        // 2. Update pieces array: Just update the moving piece's position
-        finalPiecesArray = state.pieces.map((p) =>
-          p.id === movingPieceId ? updatedMovingPiece : p
+      if (taker.color === get().playerColor) {
+        game.move(
+          getGrid(getCoordId(taker.position)),
+          getGrid(getCoordId(moved.position))
         );
       }
 
-      // --- Return the final updated state ---
-      return {
-        ...state,
-        boardState: newBoardState, // Return the updated board state map
-        pieces: finalPiecesArray, // Return the correctly filtered/updated pieces array
-        currentPlayer: state.currentPlayer === "white" ? "black" : "white",
-      };
-    });
+      set({
+        boardState: board,
+        superPositions: sup,
+        selectedPiece: null,
+        currentPlayer: get().currentPlayer === "white" ? "black" : "white",
+        gameScore:
+          get().gameScore + get().currentPlayer === get().playerColor ? 100 : 0,
+        playerXP:
+          get().playerXP + get().currentPlayer === get().playerColor ? 100 : 0,
+        message: captureMsg,
+      });
+      get().tickSuperPositions();
 
-    // set((state) => {
-    //   const pieces = state.pieces.map((p) => {
-    //     if (p.id === pieceId) {
-    //       // Common for all pieces: Update position
-    //       const updatedPiece = { ...p, positions: [newPosition] };
+      // Trigger AI if needed
+      if (get().currentPlayer !== get().playerColor) {
+        setTimeout(get().handleAiMove, Math.floor(Math.random() * 300) + 500);
+      }
+      return;
+    }
+    const resolveEntanglement = (capturedId: string) => {
+      for (const [key, rec] of ent) {
+        if (rec.allyId === capturedId || rec.enemyId === capturedId) {
+          const partnerId =
+            rec.allyId === capturedId ? rec.enemyId : rec.allyId;
+          const partner = findCoordById(board, partnerId);
+          if (partner) {
+            board.delete(partner[0]);
+            game.removePiece(getGrid(partner[0] as Coord));
+          }
+          ent.delete(key);
+          return partnerId;
+        }
+      }
+      return null;
+    };
 
-    //       // Handle piece-specific logic
-    //       switch (true) {
-    //         // --- Pawn Logic ---
-    //         case p.type.startsWith("Pawn"):
-    //           // Tunneling (two-square move)
-    //           if (Math.abs(newPosition.y - p.positions[0].y) === 2) {
-    //             return { ...updatedPiece, tunnelingUsed: true };
-    //           }
-    //           // En passant capture (would need additional logic)
-    //           // Promotion (would need additional logic)
-    //           return updatedPiece;
+    // ---- Classical capture ----
+    board.delete(getCoordId(loser.position));
+    if (get().currentPlayer === get().playerColor) {
+      game.removePiece(getGrid(getCoordId(loser.position)));
+    }
+    board.delete(getCoordId(taker.position));
+    const moved: Piece = { ...taker, position: loser.position };
+    board.set(getCoordId(moved.position), moved);
 
-    //         // --- King Logic ---
-    //         case p.type.startsWith("King"):
-    //           // Castling (king side)
-    //           if (newPosition.x - p.positions[0].x === 2) {
-    //             // Find and move rook
-    //             const rook = state.pieces.find(
-    //               (piece) =>
-    //                 piece.positions[0].x === 7 &&
-    //                 piece.positions[0].y === newPosition.y
-    //             );
-    //             if (rook) {
-    //               rook.positions[0] = { x: 5, y: newPosition.y };
-    //             }
-    //           }
-    //           // Castling (queen side)
-    //           if (newPosition.x - p.positions[0].x === -2) {
-    //             const rook = state.pieces.find(
-    //               (piece) =>
-    //                 piece.positions[0].x === 0 &&
-    //                 piece.positions[0].y === newPosition.y
-    //             );
-    //             if (rook) {
-    //               rook.positions[0] = { x: 3, y: newPosition.y };
-    //             }
-    //           }
-    //           return { ...updatedPiece, hasMoved: true };
+    // quantum bookkeeping for taker
+    const qRec = sup.get(baseId(taker.id));
+    if (qRec) {
+      if (isClone(taker.id)) qRec.clonePos = moved.position;
+      else qRec.originalPos = moved.position;
+      sup.set(baseId(taker.id), qRec);
+    }
 
-    //         // --- Rook Logic ---
-    //         case p.type.startsWith("Rook"):
-    //           return { ...updatedPiece, hasMoved: true };
+    const partnerId = resolveEntanglement(loser.id);
+    const captureMsg = partnerId
+      ? `🔗 Entangled capture: '${loser.id}' & '${partnerId}' removed.`
+      : `❌ ${loser.type} captured by ${taker.type}.`;
 
-    //         // --- Knight Logic ---
-    //         case p.type.startsWith("Knight"):
-    //           // No special flags needed
-    //           return updatedPiece;
-
-    //         // --- Bishop Logic ---
-    //         case p.type.startsWith("Bishop"):
-    //           // No special flags
-    //           return updatedPiece;
-
-    //         // --- Queen Logic ---
-    //         case p.type.startsWith("Queen"):
-    //           // No special flags
-    //           return updatedPiece;
-
-    //         default:
-    //           return updatedPiece;
-    //       }
-    //     }
-    //     return p;
-    //   });
-
-    //   // Determine capture using entanglement rules
-    //   const movedPiece = pieces.find((p) => p.id === pieceId)!;
-    //   const capturePosition = movedPiece.positions[0];
-
-    //   // 3. Remove any enemy piece occupying the target grid.
-    //   //    Also keep the existing entanglement capture logic for allied pieces if needed.
-    //   const filteredPieces = pieces.filter((p) => {
-    //     // Always keep the piece that just moved.
-    //     if (p.id === pieceId) return true;
-
-    //     // Check if any piece is located on the target grid.
-    //     if (
-    //       p.positions.some(
-    //         (pos) => pos.x === capturePosition.x && pos.y === capturePosition.y
-    //       )
-    //     ) {
-    //       // If it’s an enemy piece, remove it (i.e. capture it).
-    //       if (p.color !== movedPiece.color) {
-    //         return false;
-    //       }
-    //       // Otherwise, if it is the same color, apply your entanglement logic.
-    //       return (
-    //         !p.entangledWith || !pieces.find((p2) => p2.id === p.entangledWith)
-    //       );
-    //     }
-    //     return true;
-    //   });
-
-    //   const newBoardState = new Map(state.boardState);
-    //   const targetKey = `${capturePosition.x}-${capturePosition.y}`;
-    //   const pieceAtTarget = newBoardState.get(targetKey);
-    //   if (pieceAtTarget && pieceAtTarget.color !== movedPiece.color) {
-    //     newBoardState.delete(targetKey);
-    //   }
-    //   // Remove any old key for the moving piece (if it exists elsewhere)
-    //   newBoardState.forEach((piece, key) => {
-    //     if (piece.id === pieceId && key !== targetKey) {
-    //       newBoardState.delete(key);
-    //     }
-    //   });
-    //   newBoardState.set(targetKey, movedPiece);
-
-    //   return {
-    //     pieces: filteredPieces,
-    //     currentPlayer: state.currentPlayer === "white" ? "black" : "white",
-    //     boardState: newBoardState,
-    //   };
-    // });
-  },
-
-  collapseSuperposition: (pieceId, triggerPosition) => {
-    set((state) => {
-      const piece = state.pieces.find((p) => p.id === pieceId);
-      if (!piece?.isSuperposed || piece.type === "king") return state;
-
-      const collapsedPosition = piece.positions.reduce(
-        (closest, pos) =>
-          distance(pos, triggerPosition) < distance(closest, triggerPosition)
-            ? pos
-            : closest,
-        piece.positions[0]
+    const rec = sup.get(baseId(taker.id));
+    if (rec) {
+      rec.captured.push(loser);
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      isClone(taker.id)
+        ? (rec.clonePos = moved.position)
+        : (rec.originalPos = moved.position);
+      sup.set(baseId(taker.id), rec);
+    }
+    playCaptureSound();
+    if (taker.color === get().playerColor) {
+      game.move(
+        getGrid(getCoordId(taker.position)),
+        getGrid(getCoordId(moved.position))
       );
+    }
 
-      return {
-        pieces: state.pieces.map((p) =>
-          p.id === pieceId
-            ? {
-                ...p,
-                positions: [collapsedPosition],
-                isSuperposed: false,
-              }
-            : p
-        ),
-      };
+    set({
+      boardState: board,
+      superPositions: sup,
+      selectedPiece: null,
+      entanglements: ent,
+      currentPlayer: get().currentPlayer === "white" ? "black" : "white",
+      message: captureMsg,
     });
-  },
 
-  setQuantumMoveType: (moveType) => {
-    set((state) => ({
-      quantumState: { ...state.quantumState, activeMoveType: moveType },
-    }));
-  },
-
-  // isValidMove: (piece, target) => {
-  //   const classicalMoves = getClassicalMoves(piece);
-  //   return classicalMoves.some((m) => m.x === target.x && m.y === target.y);
-  // },
-
-  handlePieceClick: (piece: Piece) => {
-    console.log("currrent p " + piece.type);
-    const previous = get().selectedPiece;
-    let moves: Position[];
-    if (
-      previous &&
-      previous.color === get().currentPlayer &&
-      piece.color !== get().currentPlayer
-    ) {
-      console.log("check mate+++++");
-      moves = getAllAvailableMoves(previous, get().boardState);
+    get().tickSuperPositions();
+    if (get().currentPlayer !== get().playerColor) {
+      console.log("AI turn");
+      setTimeout(get().handleAiMove, Math.floor(Math.random() * 300));
     }
-    moves = getAllAvailableMoves(piece, get().boardState);
-    // making move
-    if (
-      moves.some(
-        (mv) =>
-          mv.x == previous?.positions[0].x && mv.y == previous?.positions[0].y
-      ) &&
-      previous?.color !== piece.color
-    ) {
-      console.log("+++++++++++++++");
-      get().makeMove(piece.positions[0], get().validMoves);
-    } else
-      set((state) => ({
-        ...state.quantumState,
-        selectedPiece: piece,
-        validMoves: moves,
-      }));
   },
 
-  makeMove: (pos: Position, validMoves: Position[]) => {
-    console.log("making move ++++++++++++++++++++++++");
-    if (get().currentPlayer !== get().selectedPiece?.color) return;
-    const piece = get().boardState.get(pos.x + "-" + pos.y);
-    if (piece && piece.color === get().currentPlayer) return;
-    const selected = get().selectedPiece;
-    if (!selected) return;
-    else {
-      if (validMoves.some((mv) => mv.x == pos.x && mv.y == pos.y)) {
-        get().movePiece(selected, pos);
-        const newMap = new Map(get().boardState);
-        newMap.delete(`${selected.positions[0].x}-${selected.positions[0].y}`);
-        newMap.set(`${pos.x}-${pos.y}`, get().selectedPiece!);
-        set((state) => ({ ...state, boardState: newMap, validMoves: [] }));
+  /* -----------------------  Quantum‑timer housekeeping  ---------------------- */
+  tickSuperPositions: () => {
+    const board = new Map(get().boardState);
+    const sup = new Map(get().superPositions);
+    const game = get().game;
+
+    const notices: string[] = [];
+
+    for (const [rootId, rec] of sup) {
+      // warn 1 turn before collapse
+      if (rec.timeLeft === 1) {
+        notices.push(`⚠️  '${rootId}' will collapse on the next turn!`);
       }
+
+      rec.timeLeft -= 1;
+      if (rec.timeLeft > 0) {
+        sup.set(rootId, rec);
+        continue; // still quantum → skip collapse logic
+      }
+
+      // nothing to collapse (no clone ever spawned) → just reset
+      if (!rec.cloneId) {
+        sup.delete(rootId);
+        notices.push(
+          `🔄  '${rootId}' returned to classical (no clone spawned).`
+        );
+        continue;
+      }
+
+      // choose the survivor
+      const ids = [rec.originalId, rec.cloneId] as string[];
+      const keepIdx = Math.floor(Math.random() * ids.length);
+      const keepId = ids[keepIdx];
+
+      ids.forEach((id) => {
+        if (id === keepId) return;
+        const gone = findCoordById(board, id);
+        if (gone) {
+          board.delete(gone[0]);
+          game.removePiece(getGrid(gone[0] as Coord));
+        }
+      });
+
+      sup.delete(rootId);
+      notices.push(`💥  Collapse resolved – branch '${keepId}' survived.`);
     }
+
+    if (notices.length) {
+      set({
+        boardState: board,
+        superPositions: sup,
+        message: notices.join(" | "),
+      });
+    } else {
+      // don’t overwrite an existing message if nothing new happened
+      set({ boardState: board, superPositions: sup });
+    }
+  },
+
+  /* ------------------  Forced collapse after a capture  ---------------------- */
+  collapsePiece: (piece) => {
+    const board = new Map(get().boardState);
+    const sup = new Map(get().superPositions);
+    const game = get().game;
+
+    const rootId = baseId(piece.id);
+    const rec = sup.get(rootId);
+    if (!rec) return;
+
+    const branches = [rec.originalId, rec.cloneId].filter(Boolean) as string[];
+    const killId = branches[Math.floor(Math.random() * branches.length)];
+
+    const gone = findCoordById(board, killId);
+    if (gone) {
+      board.delete(gone[0]);
+      game.removePiece(getGrid(gone[0] as Coord));
+    }
+
+    sup.delete(rootId);
+
+    const msg =
+      branches.length === 1
+        ? `💀  '${rootId}' had no surviving branches (removed from board).`
+        : `💥  Collapse: branch '${killId}' lost – '${rootId}' now classical.`;
+
+    set({ boardState: board, superPositions: sup, message: msg });
+  },
+
+  tickEntanglements: () => {
+    const ent = new Map(get().entanglements);
+    const msgs: string[] = [];
+    for (const [key, r] of ent) {
+      if (r.turnsLeft === 1)
+        msgs.push(
+          `⚠️ Entanglement '${r.allyId}'↔'${r.enemyId}' expires next turn.`
+        );
+      r.turnsLeft -= 1;
+      if (r.turnsLeft <= 0) {
+        ent.delete(key);
+        msgs.push(`⏳ Entanglement '${r.allyId}'↔'${r.enemyId}' expired.`);
+      } else ent.set(key, r);
+    }
+    if (msgs.length) set({ entanglements: ent, message: msgs.join(" | ") });
+    else set({ entanglements: ent });
+  },
+
+  initializeEntanglement: () => {
+    set({
+      onSelectEntangle: true,
+      playerQuantumEnergy: get().playerQuantumEnergy - 100,
+    });
   },
 }));
 

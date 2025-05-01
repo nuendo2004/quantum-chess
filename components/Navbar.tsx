@@ -1,11 +1,12 @@
 "use client";
 import React from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import ProfileMenu from "./ProfileMenu";
+import { useUserStore } from "@/store/user";
+import Link from "next/link";
 
 const Navbar: React.FC = () => {
-  const { data: session } = useSession();
+  const { user } = useUserStore((state) => state);
   const router = useRouter();
 
   return (
@@ -21,13 +22,13 @@ const Navbar: React.FC = () => {
         <div className="flex items-center gap-6">
           <nav className="hidden md:flex gap-6 text-purple-200">
             <a
-              href="/games"
+              href="/quantumChess"
               className="hover:text-purple-600 dark:hover:text-purple-400"
             >
               Games
             </a>
             <a
-              href="/leaderboard"
+              href="/ranking"
               className="hover:text-purple-600 dark:hover:text-purple-400"
             >
               Leaderboard
@@ -38,19 +39,17 @@ const Navbar: React.FC = () => {
             >
               Achievements
             </a>
-            <a
-              href="/learn"
+            <Link
+              href="/blogs"
               className="hover:text-purple-600 dark:hover:text-purple-400"
             >
               Learn
-            </a>
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
-            {session ? (
+            {user ? (
               <div className="flex items-center gap-4">
-                <span className="sm:inline">
-                  {session.user.name?.split(" ")[0]}
-                </span>
+                <span className="sm:inline">{user.name?.split(" ")[0]}</span>
                 <ProfileMenu />
               </div>
             ) : (

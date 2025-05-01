@@ -9,9 +9,11 @@ if (!MONGODB_URI) {
   );
 }
 
+//@ts-expect-error any
 let cached = global.mongoose;
 
 if (!cached) {
+  //@ts-expect-error any
   cached = global.mongoose = { conn: null, promise: null };
 }
 
@@ -22,6 +24,7 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = { bufferCommands: false };
     cached.promise = mongoose
+      //@ts-expect-error any
       .connect(MONGODB_URI, opts)
       .then((mongoose) => mongoose);
   }

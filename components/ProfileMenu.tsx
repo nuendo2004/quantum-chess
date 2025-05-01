@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
+import { useUserStore } from "@/store/user";
 
 const ProfileMenu = () => {
-  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
+  const { user } = useUserStore((state) => state);
   const userImage =
     "https://e7.pngegg.com/pngimages/177/551/png-clipart-user-interface-design-computer-icons-default-stephen-salazar-graphy-user-interface-design-computer-wallpaper-thumbnail.png";
 
@@ -41,7 +42,7 @@ const ProfileMenu = () => {
         className="flex items-center focus:outline-none"
       >
         <Image
-          src={session?.user?.image || userImage}
+          src={user?.image || userImage}
           alt="User"
           width={40}
           height={40}

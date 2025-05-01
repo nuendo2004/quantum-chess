@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "../auth/[...nextauth]/authOption";
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 
@@ -50,4 +50,32 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+export async function PUT(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json();
+  const { name } = body;
+  if (typeof name !== "string") {
+    return NextResponse.json({ message: "Invalid name" }, { status: 400 });
+  }
+
+  const updated = await prisma.user.update({
+    where: { email: session.user.email! },
+    data: { name },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      dateCreated: true,
+      emailVerified: true,
+    },
+  });
+
+  return NextResponse.json({ user: updated });
 }
