@@ -7,17 +7,17 @@ import { motion } from "framer-motion";
 const levels = [
   [
     ["S", "", "", "Z", "X"],
-    ["X", "X", "H", "", "T"],
+    ["X", "X", "H", "Z", "X"],
     ["", "", "X", "Z", "X"],
-    ["", "X", "", "X", "X"],
-    ["", "T", "", "", "E"]
+    ["", "X", "X", "", "X"],
+    ["", "X", "", "", "E"]
   ],
   [
-    ["S", "", "", "Z", "X"],
-    ["X", "X", "", "H", "X"],
-    ["", "H", "X", "Z", "T"],
-    ["", "X", "", "X", ""],
-    ["", "T", "", "H", "E"]
+    ["S", "", "H", "Z", "X"],
+    ["X", "", "", "T", "X"],
+    ["", "H", "X", "Z", ""],
+    ["", "Z", "", "X", ""],
+    ["", "T", "Z", "", "E"]
   ],
   [
     ["S", "", "Z", "H", "X"],
@@ -104,8 +104,8 @@ export default function SuperpositionMaze() {
     setPosition([nx, ny]);
 
     if (isEnd(maze, nx, ny)) {
-      if (!visitedH) {
-        setMessage("🔒 Must use Hadamard gate before finishing.");
+      if (!visitedH || !visitedZ) {
+        setMessage("🔒 You must visit required gates (H, Z) before finishing.");
         return;
       }
       setMessage("🎉 Level Complete!");
