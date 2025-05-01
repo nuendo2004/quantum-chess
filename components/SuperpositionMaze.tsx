@@ -6,32 +6,32 @@ import { motion } from "framer-motion";
 
 const levels = [
   [
-    ["S", "", "", "H", "X"],
-    ["X", "X", "", "", "T"],
-    ["", "", "X", "H", "X"],
-    ["", "X", "", "", ""],
-    ["", "T", "", "X", "E"]
+    ["S", "", "", "Z", "X"],
+    ["X", "X", "H", "", "T"],
+    ["", "", "X", "Z", "X"],
+    ["", "X", "", "X", "X"],
+    ["", "T", "", "", "E"]
   ],
   [
-    ["S", "", "", "H", "X"],
-    ["X", "X", "", "T", "X"],
-    ["", "", "X", "H", ""],
-    ["", "X", "", "", ""],
+    ["S", "", "", "Z", "X"],
+    ["X", "X", "", "H", "X"],
+    ["", "H", "X", "Z", "T"],
+    ["", "X", "", "X", ""],
     ["", "T", "", "H", "E"]
   ],
   [
-    ["S", "", "", "H", "X"],
-    ["X", "X", "", "T", "X"],
-    ["", "H", "X", "H", ""],
-    ["T", "X", "H", "", ""],
+    ["S", "", "Z", "H", "X"],
+    ["X", "", "", "T", "X"],
+    ["", "H", "X", "Z", ""],
+    ["T", "X", "Z", "", ""],
     ["", "T", "", "H", "E"]
   ]
 ];
 
 const levelGoals = [
   "Reach 🏁 with superposition |ψ⟩ = (|0⟡ + |1⟡)/√2",
-  "Teleport and reach 🏁 with state |1⟡",
-  "Utilize multiple Hadamard gates and reach 🏁 with valid qubit state"
+  "Teleport and reach 🏁 with state |1⟡ after phase flip",
+  "Navigate Hadamard and Z gates to reach 🏁 in a stable quantum state"
 ];
 
 const isEnd = (maze: string[][], x: number, y: number) => maze[x][y] === "E";
@@ -42,6 +42,7 @@ export default function SuperpositionMaze() {
   const [position, setPosition] = useState([0, 0]);
   const [superposition, setSuperposition] = useState(false);
   const [visitedH, setVisitedH] = useState(false);
+  const [visitedZ, setVisitedZ] = useState(false);
   const [message, setMessage] = useState("");
   const [qubitState, setQubitState] = useState("|0⟡");
   const [qubitLog, setQubitLog] = useState<string[]>(["Start at |0⟡"]);
@@ -56,21 +57,40 @@ export default function SuperpositionMaze() {
     const [nx, ny] = [x + dx, y + dy];
     if (nx < 0 || ny < 0 || nx >= maze.length || ny >= maze[0].length) return;
     const cell = maze[nx][ny];
-    if (cell === "X") return;
+    if (cell === "X") {
+      setMessage("🚫 Path blocked! Try another route.");
+      return;
+    }
+
+    let newState = qubitState;
 
     if (cell === "H") {
       setSuperposition(true);
       setVisitedH(true);
-      setQubitState("(|0⟡ + |1⟡)/√2");
-      logQubitChange("Hadamard Gate Applied", "(|0⟡ + |1⟡)/√2");
-      setGateInfo("Hadamard Gate (H): Creates a superposition |ψ⟩ = (|0⟩ + |1⟩)/√2");
+      newState = "(|0⟡ + |1⟡)/√2";
+      setQubitState(newState);
+      logQubitChange("Hadamard Gate Applied", newState);
+      setGateInfo("Hadamard Gate (H): Creates superposition |ψ⟩ = (|0⟩ + |1⟩)/√2");
       setMessage("🌀 Hadamard gate activated.");
+    } else if (cell === "Z") {
+      if (superposition) {
+        setVisitedZ(true);
+        newState = qubitState === "(|0⟡ + |1⟡)/√2" ? "(|0⟡ - |1⟡)/√2" : qubitState;
+        setQubitState(newState);
+        logQubitChange("Z Gate Applied", newState);
+        setGateInfo("Z Gate (Z): Applies a phase flip to |1⟩ component.");
+        setMessage("⚛️ Z gate applied (phase flip).");
+      } else {
+        setMessage("🚫 You need superposition before Z gate.");
+        return;
+      }
     } else if (cell === "T") {
       if (superposition) {
         setPosition([maze.length - 1, maze[0].length - 1]);
-        setQubitState("|1⟡");
-        logQubitChange("Teleported", "|1⟡");
-        setGateInfo("Teleport Gate (T): Works only if you're in superposition.");
+        newState = "|1⟡";
+        setQubitState(newState);
+        logQubitChange("Teleported", newState);
+        setGateInfo("Teleport Gate (T): Only works with superposition.");
         setMessage("⚡ Quantum tunnel successful!");
         return;
       } else {
@@ -85,7 +105,7 @@ export default function SuperpositionMaze() {
 
     if (isEnd(maze, nx, ny)) {
       if (!visitedH) {
-        setMessage("🔒 You must visit a Hadamard gate first.");
+        setMessage("🔒 Must use Hadamard gate before finishing.");
         return;
       }
       setMessage("🎉 Level Complete!");
@@ -96,6 +116,7 @@ export default function SuperpositionMaze() {
           setPosition([0, 0]);
           setSuperposition(false);
           setVisitedH(false);
+          setVisitedZ(false);
           setQubitState("|0⟡");
           setQubitLog(["Start at |0⟡"]);
           setMessage("");
@@ -125,7 +146,7 @@ export default function SuperpositionMaze() {
                       ${cell === "X" ? "bg-gray-700" : "bg-gradient-to-br from-purple-700 to-indigo-700 text-white"}
                       ${isPlayer ? "ring-2 ring-yellow-400" : ""}`}
                     animate={{ scale: isPlayer ? 1.2 : 1 }}>
-                    {isPlayer ? "🧍" : cell === "H" ? "H" : cell === "T" ? "T" : cell === "E" ? "🏁" : ""}
+                    {isPlayer ? "🧍" : cell === "H" ? "H" : cell === "T" ? "T" : cell === "Z" ? "Z" : cell === "E" ? "🏁" : ""}
                   </motion.div>
                 );
               })
